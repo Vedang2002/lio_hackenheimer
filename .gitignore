@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+data/
+*.pdf
+__pycache__/
+.venv/
+node_modules/
+*.sqlite
+*.db
