@@ -1,1 +1,0 @@
-{"name":"launchguard-hosted-source","private":true,"type":"module","scripts":{"build":"node build.mjs","test":"node --test worker.test.mjs"},"engines":{"node":">=22"}}
