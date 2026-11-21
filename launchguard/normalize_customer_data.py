@@ -7,6 +7,9 @@ ROOT=Path(__file__).resolve().parent
 OUT=ROOT/'customer-data'
 records=json.loads((OUT/'extracted.json').read_text(encoding='utf-8'))
 review=json.loads((OUT/'reviewed-evidence.json').read_text(encoding='utf-8'))
+current_checksums={key:record['sha256'] for key,record in records.items()}
+if review.get('sourceChecksums') != current_checksums:
+    raise ValueError('Reviewed evidence is not pinned to the current archive checksums. Review changed evidence and update its sourceChecksums before normalizing.')
 rows=lambda key: records[key]['rows']
 stock=rows('soony/erp/stock_snapshot.csv')
 receipts={r['gr_number']:r for r in rows('soony/erp/goods_receipts.csv')}
@@ -45,7 +48,7 @@ snapshot={'sample':False,'dataset':'Soony customer archive / kickoff replay','no
  'shifts':[{'start':'2026-11-21T06:00:00+01:00','end':'2026-11-21T22:00:00+01:00'},{'start':'2026-11-22T06:00:00+01:00','end':'2026-11-22T20:00:00+01:00'}],
  'products':products,'components':components,'lots':[], 'findings':review['findings'],
  'assumptions':review['assumptions'], 'archiveFiles':len(records),
- 'inboundUnscheduled':plan['Inbound'][1:]}
+ 'inboundUnscheduled':plan['Inbound'][1:],'sourceChecksums':current_checksums}
 (OUT/'snapshot.json').write_text(json.dumps(snapshot,ensure_ascii=False,indent=2),encoding='utf-8')
 normalized_pos=[]
 for r in rows('soony/erp/purchase_orders_legacy_2024-2025H1.csv'):

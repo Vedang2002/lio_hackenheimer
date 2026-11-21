@@ -24,7 +24,11 @@ const server=http.createServer((req,res)=>{
       // All mutations require same-origin JSON. No credentials or customer records are served cross-origin.
       if(req.method==='POST' && (req.headers['content-type']?.split(';')[0]!=='application/json' || (req.headers.origin && req.headers.origin!==`http://${req.headers.host}`)))return json(res,403,{error:'Same-origin JSON required'});
       if(req.method==='GET'&&publicFiles.has(url.pathname)){const file=publicFiles.get(url.pathname);res.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.css')?'text/css':'text/javascript','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});res.end(await readFile(join(root,'public',file)));return;}
-      if(req.method==='GET'&&url.pathname==='/api/state')return json(res,200,{...state,report:assess(state.data),model:env.OLLAMA_MODEL||null});
+      if(req.method==='GET'&&url.pathname==='/api/state'){
+        let portalSync=null;
+        try{portalSync=JSON.parse((await readFile(join(root,'customer-data','portal-sync-status.json'),'utf8')).replace(/^\uFEFF/,''));}catch(e){if(e.code!=='ENOENT')throw e;}
+        return json(res,200,{...state,report:assess(state.data),portalSync,model:env.OLLAMA_MODEL||null});
+      }
       if(req.method==='POST'&&url.pathname==='/api/customer'){
         const data=validate(JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8')));state={data,actions:[],events:state.events};event('customer-load','Loaded normalized local archive and reviewed evidence.');await save();return json(res,200,{ok:true});
       }

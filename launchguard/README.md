@@ -35,7 +35,13 @@ python normalize_customer_data.py
 node analyze_customer.mjs
 ```
 
-Then select **Load Soony archive** in the app. Review annotations are explicit inputs, not hidden quantities in the forecasting code. Recheck them against changed source checksums before accepting a new drop. No automatic authenticated portal refresh is implemented. The portal credentials supplied in chat were not needed or saved because the archive was present.
+Then select **Load Soony archive** in the app. Review annotations are explicit inputs, not hidden quantities in the forecasting code. Recheck them against changed source checksums before accepting a new drop.
+
+### Live portal sync
+
+From the parent Lio folder, run `./SYNC_SOONY.ps1` and enter the team API token at its hidden prompt. The token is used only in memory as an Authorization Bearer header and is not saved. `./SYNC_SOONY.ps1 -CheckOnly` compares the portal index without downloading customer files. A process-scoped `SOONY_API_TOKEN` environment variable can be used instead of the prompt; do not commit it or pass the token as a command argument.
+
+The command follows the authenticated OpenAPI contract, compares SHA-256 hashes, downloads only new/changed files, and verifies each size and checksum before replacement. Removed portal files are reported and retained locally for audit; do not include them in refreshed analysis. The app reads the private sync status and displays a review warning when changes appear. Synchronization does not claim to revalidate handwritten corrections or legal/quality releases. Refresh the extraction, review annotations and normalized snapshot before relying on changed data. No unattended polling is configured.
 
 ## Demo
 

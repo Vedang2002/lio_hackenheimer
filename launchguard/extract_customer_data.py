@@ -11,10 +11,16 @@ SOURCE = ROOT / 'customer-data' / 'soony-data'
 OUT = ROOT / 'launchguard' / 'customer-data'
 OUT.mkdir(parents=True, exist_ok=True)
 records = {}
+index_path=OUT/'portal-file-index.json'
+active_paths=None
+if index_path.exists():
+    active_paths={row['path'] for row in json.loads(index_path.read_text(encoding='utf-8-sig'))['files']}
 for file in sorted(SOURCE.rglob('*')):
     if not file.is_file():
         continue
     key = file.relative_to(SOURCE).as_posix()
+    if active_paths is not None and key not in active_paths:
+        continue
     record = {'path': key, 'bytes': file.stat().st_size, 'sha256': hashlib.sha256(file.read_bytes()).hexdigest()}
     try:
         if file.suffix.lower() == '.pdf':

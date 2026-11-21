@@ -11,5 +11,6 @@
   ],
   "browserQA": "Unavailable: browser access host unavailable",
   "localAIReader": "Not run; no configured model",
-  "externalActions": "No supplier email or bookings sent"
+  "externalActions": "No supplier email or bookings sent",
+  "portalSync": "Authenticated live check passed: 308 matching SHA-256 hashes, no changes"
 }

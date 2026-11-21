@@ -9,6 +9,8 @@ Then open http://127.0.0.1:8787
 The launcher can use the bundled Node runtime already present on this computer.
 The app loads the local Soony customer snapshot automatically. This is a labeled kickoff replay, not a live warehouse count.
 
+To check/download new portal data, run .\SYNC_SOONY.ps1 and enter the API token at its hidden prompt. Add -CheckOnly to compare hashes without downloading files. The token is not saved. Review any changed evidence before regenerating the analysis.
+
 Your solution is in the launchguard folder:
 
 1. solution.txt — problem analysis, calculations, architecture, business case and office-hour questions.
