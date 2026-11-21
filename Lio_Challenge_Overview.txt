@@ -1,0 +1,43 @@
+Lio
+
+Lio: Keep the Line Running
+
+You just closed your first customer: a games publisher whose biggest release of the year ships Sunday 20:00, with the last 20% not packed yet. Build the AI agents that save the launch, on messy real-world procurement data.
+
+Prizes
+
+1. 1st place
+   A PS5 + GTA 6 (Lio) + €300 cash from START Munich
+2. 2nd place
+   €200 cash from START Munich
+3. 3rd place
+   €100 cash from START Munich
+
+Additional prize details
+
+A PS5 + GTA 6 for the winning team. If Soony doesn't launch on time… neither do you. Plus €300 / €200 / €100 cash from START Munich for the top 3 of every challenge.
+
+Resources
+
+- Soony customer portal (data + API): https://start-hack-portal-cxh3crbdaef2f8gt.westeurope-01.azurewebsites.net/
+- Lio careers: https://lio.ai/careers
+
+What the judges look for
+
+Guidance to aim for. These are not scored individually.
+
+A pitch that sticks
+
+A clear story from problem to solution to impact. Make us remember you. Do we understand the problem in the first 30 seconds? Is there a clear line from what hurts at Soony to what you built? Did you use what you learned from Soony's team, not just from the data?
+
+A real business case
+
+Well motivated: why this, why now, what is it worth? And it works beyond Soony. Why would Soony pay for it, and roughly how much? Who else has this problem?
+
+Technical depth
+
+Agents that actually do the work. Real integration of messy data, nothing hardcoded. Do agents take real actions (decide, write, escalate)? Solid architecture (tool use, reasoning, state, not one big prompt)? Does the system cope when a new drop arrives?
+
+Taste
+
+Does it look and feel like a real product? A consistent design, a clear UX and the small details count: wording, defaults, the moment a human has to decide.
