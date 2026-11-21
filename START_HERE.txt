@@ -14,6 +14,8 @@ It is owner-private: sign in with the owning ChatGPT account. The reviewed snaps
 
 To check/download new portal data, run .\SYNC_SOONY.ps1 and enter the API token at its hidden prompt. Add -CheckOnly to compare hashes without downloading files. The token is not saved. Review any changed evidence before regenerating the analysis.
 
+Automatic Gmail reading/replies: open Set up Gmail automation in the app, or read email-automation/README.md. The code runs in a Google Apps Script project after one-time account authorization and timer setup. It is not active yet and no emails have been sent.
+
 Your solution is in the launchguard folder:
 
 1. solution.txt — problem analysis, calculations, architecture, business case and office-hour questions.

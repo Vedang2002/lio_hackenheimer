@@ -8,6 +8,8 @@ The application combines a packing forecast, reviewed evidence and a persistent 
 
 > **Status:** the local application and authenticated portal sync work. The reviewed customer snapshot is deployed, with approval, to the **[owner-private LaunchGuard Site](https://launchguard-hackenheimer.lucidcoil32.chatgpt.site)**. Sign in with the owning ChatGPT account. The optional local AI reader has not been validated with a configured model and is disabled in the hosted version.
 
+**New: [automatic customer email worker](email-automation/README.md).** The code can read new Gmail messages and send threaded acknowledgments, approved template answers, or drafts on a Google-hosted timer. One-time Google authorization and trigger setup are still required; it is not active merely because Gmail is signed in.
+
 ## Problem statement
 
 Soony needs 640,000 Standard and 72,000 Collector's Editions ready for dispatch from Hamburg on **22 November 2026 at 20:00 CET**. At kickoff, 512,000 Standard and 46,800 Collector copies are packed, leaving **128,000 Standard and 25,200 Collector copies**.
@@ -84,6 +86,7 @@ The forecast and action planner are deterministic tools. Without a configured mo
 | Customer pipeline | Extraction, normalization, material audit and conditional scenario outputs |
 | Portal sync | Bearer authentication, hash comparisons, verified downloads and review warnings |
 | Optional local AI | Multilingual text reading with verbatim-quote checks |
+| Automatic customer email | Separate Google Apps Script worker with reply/draft modes, loop prevention, deduplication and write limits; requires setup |
 
 ## Requirements and quick start
 
@@ -188,6 +191,14 @@ node .\launchguard\server.mjs
 
 Under **Evidence workspace**, expand **Read a supplier document with local AI**, enter its source name and paste the original text. The server calls the local Ollama endpoint at `http://127.0.0.1:11434/api/chat`. Review the claims, quotes and uncertainty before changing the normalized snapshot. The reader accepts text, not uploaded PDFs or images.
 
+## Automatically read and reply to Gmail
+
+Open **Set up Gmail automation** in the app, or follow [email-automation/README.md](email-automation/README.md). Copy `Code.gs`, `Config.gs` and `appsscript.json` into a Google Apps Script project owned by the support account, authorize it, and run `startEmailAutomation`. Google hosts the one-minute timer; your computer can be off. A separate OAuth client ID/secret is not required for this route.
+
+Three modes are available: `acknowledge` sends the configured receipt acknowledgment; `approved_rules` sends exactly one matching approved public answer and holds unmatched questions; `draft` writes Gmail drafts without sending. Test in draft mode first. The worker does not generate arbitrary AI responses or send the procurement planner's private findings. Mailbox status and history stay in Gmail/Apps Script, rather than this dashboard.
+
+Run `stopEmailAutomation` to stop. Settings edits require stopping, `acceptEmailConfiguration`, then starting again. A Gmail browser sign-in is not the OAuth consent or timer installation. No real messages have been read or sent during development; live authorization and end-to-end delivery testing remain for the account owner.
+
 ## Architecture and repository structure
 
 ```mermaid
@@ -213,6 +224,7 @@ flowchart LR
 | `launchguard/runtime/state.json` | Saved working state; untracked |
 | `launchguard/test.mjs` | Core forecast and data-integrity tests |
 | `launchguard/customer.test.mjs` | Private-snapshot integration checks |
+| `email-automation/` | Google-hosted Gmail worker, configuration, manifest, setup guide and mocked-service tests |
 
 ### Configuration
 
@@ -229,10 +241,12 @@ These are process environment variables. The application does not automatically 
 From the repository root:
 
 ```powershell
-node --test .\launchguard\test.mjs .\launchguard\customer.test.mjs
+node --test .\launchguard\test.mjs .\launchguard\customer.test.mjs .\email-automation\email.test.mjs
 ```
 
 The verified local dataset passes **16 tests**. Coverage includes working windows, early/late arrivals, shared stock, received-lot accounting, stale/overdue supply, invalid inputs, deduplicated actions and reviewed customer normalization. Four customer-specific tests skip on a fresh clone without the private snapshot. Recorded verification scope is in [verification.json](launchguard/verification.json).
+
+The email worker adds **16 tests**, bringing the combined suite to **32 passing tests** with the private snapshot present. Gmail, Google authorization, timer execution and network calls are mocked in those email tests; they do not confirm live email delivery.
 
 The browser automation host was unavailable during validation; numerical and API checks passed. A configured Ollama run remains unverified. Tests do not validate supplier promises, physical counts or commercial approvals.
 
@@ -251,7 +265,7 @@ The customer ZIP, original records, derived reports, local runtime state and pri
 - **Fixed-priority scheduling:** assumes dedicated edition capacity and declared shared-stock priority. It is not an optimization solver; setup, staffing and loading buffers need input modeling or separate checks.
 - **Archive-based planning:** current counts, revisions, approvals, actual packed progress and usable arrival times need operational confirmation.
 - **Manual evidence review:** scan interpretation and conflicting claims are not fully automated. Arbitrary future schema or delimiter changes can require parser updates.
-- **Draft-only actions:** supplier email, purchases, bookings and SAP changes are not connected. Review states do not grant authority or resolve shortages.
+- **Procurement actions remain drafts:** purchases, bookings and SAP changes are not connected. The separate customer email worker requires its own Google setup and uses approved text; review states do not grant purchasing authority or resolve shortages.
 - **Bounded audit history:** the server keeps the latest 100 events, not an immutable compliance log.
 - **Submission work remains:** verified AI execution, stakeholder interviews, supplier responses and a recorded video are still outstanding.
 

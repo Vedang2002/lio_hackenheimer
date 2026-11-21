@@ -23,5 +23,13 @@
     "hostedAPITestsPassed": 6,
     "unauthenticatedAPIStatus": 401,
     "browserWalkthrough": "Unverified: browser access host unavailable"
+  },
+  "emailAutomation": {
+    "implemented": true,
+    "testsPassed": 16,
+    "totalLocalTests": 32,
+    "liveGmailAuthorization": false,
+    "triggerInstalled": false,
+    "liveEmailsSent": 0
   }
 }

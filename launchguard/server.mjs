@@ -16,7 +16,7 @@ async function save(){const dest=join(stateDir,'state.json');await writeFile(des
 function event(type,detail){state.events.unshift({at:new Date().toISOString(),type,detail});state.events=state.events.slice(0,100);}
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
 async function body(req){let s='';for await(const c of req){s+=c;if(s.length>2_000_000)throw Error('Request exceeds 2 MB');}return JSON.parse(s||'{}');}
-const publicFiles=new Map([['/','index.html'],['/app.js','app.js'],['/style.css','style.css']]);
+const publicFiles=new Map([['/','index.html'],['/app.js','app.js'],['/style.css','style.css'],['/email-setup.html','email-setup.html'],['/email-automation/Code.gs','../../email-automation/Code.gs'],['/email-automation/Config.gs','../../email-automation/Config.gs'],['/email-automation/appsscript.json','../../email-automation/appsscript.json']]);
 const server=http.createServer((req,res)=>{
   const run=async()=>{
     const url=new URL(req.url,'http://localhost');

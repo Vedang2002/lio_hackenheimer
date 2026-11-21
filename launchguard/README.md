@@ -2,6 +2,8 @@
 
 **Start with the [main project README](../README.md)** for the problem statement, solution methodology, features, setup, user walkthrough, architecture, troubleshooting and current deployment status. This file provides additional implementation and data-contract details.
 
+For automatic Gmail reading, replies and drafts, use the separate [Google-hosted email worker](../email-automation/README.md). It requires one-time Google authorization and timer setup; the local Node server is not the email worker.
+
 A local procurement prototype for Lio's **Keep the Line Running** challenge. Reconciles ERP and physical stock, forecasts completion around shifts and arrivals, and writes deduplicated supplier evidence requests and internal escalations.
 
 ## Run
