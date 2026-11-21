@@ -2,3 +2,5 @@
 soony-data.zip
 customer-data/
 launchguard/customer-data/
+# Separate owner-private Sites repository contains the reviewed customer seed
+online-launchguard/

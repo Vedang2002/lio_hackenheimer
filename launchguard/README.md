@@ -1,5 +1,7 @@
 # LaunchGuard
 
+**Start with the [main project README](../README.md)** for the problem statement, solution methodology, features, setup, user walkthrough, architecture, troubleshooting and current deployment status. This file provides additional implementation and data-contract details.
+
 A local procurement prototype for Lio's **Keep the Line Running** challenge. Reconciles ERP and physical stock, forecasts completion around shifts and arrivals, and writes deduplicated supplier evidence requests and internal escalations.
 
 ## Run
@@ -88,4 +90,4 @@ Imports replace the snapshot and reset its work queue; prior audit events remain
 
 This is a **prototype**, not the finished hackathon submission. The actual archive is integrated and assessed. A configured AI model run, stakeholder interviews, supplier responses, a recorded video and deployment remain outstanding. The original generic pitch narrative is in `solution.txt` and `pitch-script.txt`; actual confidential findings are in the ignored customer-data report. No supplier email transport or external messaging is connected.
 
-Local-only operation is deliberate for the supplied folder task and confidential hackathon data. Do not expose this server to a public network; it has no user authentication. Draft/review states do not constitute purchasing authorization.
+The local server has no user authentication and binds to loopback. A separate private hosted adaptation has been prepared, but deployment is not complete; uploading the customer snapshot is awaiting explicit approval. Draft/review states do not constitute purchasing authorization.
