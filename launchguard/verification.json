@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-21",
+  "engineAndCustomerTestsPassed": 16,
+  "archiveFilesExtracted": 308,
+  "extractionErrors": 0,
+  "normalizedPurchaseOrderLines": 447,
+  "customerAPIChecks": [
+    "Automatically loads real customer snapshot",
+    "Generates owner-assigned action drafts",
+    "Rerun creates no duplicates"
+  ],
+  "browserQA": "Unavailable: browser access host unavailable",
+  "localAIReader": "Not run; no configured model",
+  "externalActions": "No supplier email or bookings sent"
+}

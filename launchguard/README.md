@@ -4,7 +4,7 @@ A local procurement prototype for Lio's **Keep the Line Running** challenge. Rec
 
 ## Run
 
-Install Node.js 22 or later, then open a terminal in this directory:
+From the parent Lio folder, run `./RUN_LAUNCHGUARD.ps1`. It uses Node from PATH or the bundled runtime already on this computer. Alternatively, use Node.js 22 or later in this directory:
 
 ```powershell
 node server.mjs
@@ -13,14 +13,33 @@ node server.mjs
 Open **http://127.0.0.1:8787**. No npm packages or build step required.
 
 ```powershell
-node --test test.mjs
+node --test test.mjs customer.test.mjs
 ```
 
-This implementation was exercised through the available Node runtime. The computer's `python` launcher is not functional and Node is not currently on the shell PATH; install Node or use your existing Node executable's absolute path.
+The bundled runtime was found at `$env:USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies/`. Node v24.22.1 and Python 3.12 are available there even though the shell's aliases are not working. All 16 tests passed using that Node executable.
+
+## Actual Soony archive
+
+The provided `soony-data.zip` is now extracted to the parent `customer-data/soony-data/` directory. Derived records and confidential findings are in this project's ignored `customer-data/` directory. Read **`customer-data/launch-recovery-report.txt` first**.
+
+The app automatically loads `customer-data/snapshot.json` in place of the synthetic startup scenario, with the real BOM, workbook rates and reviewed evidence. It labels this as a **kickoff replay**, not current warehouse truth. `Load Soony archive` restores that snapshot after a sample demonstration.
+
+The pipeline extracts 308 files, normalizes the two PO schemas, preserves raw evidence and source checksums, applies documented review annotations, runs the forecast and writes owner-assigned drafts. Receiving scans are inventoried; decision-relevant scans were visually reviewed, not all images OCR'd.
+
+To refresh after new archive data, with Python and the bundled `pypdf` and `openpyxl` available:
+
+```powershell
+python extract_customer_data.py
+# Review changed source documents and update customer-data/reviewed-evidence.json.
+python normalize_customer_data.py
+node analyze_customer.mjs
+```
+
+Then select **Load Soony archive** in the app. Review annotations are explicit inputs, not hidden quantities in the forecasting code. Recheck them against changed source checksums before accepting a new drop. No automatic authenticated portal refresh is implemented. The portal credentials supplied in chat were not needed or saved because the archive was present.
 
 ## Demo
 
-1. Start with the conspicuous **synthetic demonstration** banner. Only targets, kickoff packed totals and shift windows come from the brief. Component names, stock, rates, priorities and supplier events are invented test inputs.
+1. Start with the customer archive banner and inspect the source-linked findings. The real-data analysis and drafts are in `customer-data/`. Select **Load synthetic sample** only for the following illustrative recovery demo.
 2. Run the procurement agent. It writes five evidence requests/escalations in the sample and saves the queue and audit trail to `runtime/state.json`.
 3. Review the stock mismatch and Collector shortfall. Run again: there are no duplicate drafts.
 4. Simulate earlier delivery. The sample shipment becomes confirmed and released at Sunday 14:00. The projected Collector shortfall disappears, but the stock conflict still requires verification.
@@ -40,11 +59,11 @@ Paste supplier text and a source name under Evidence workspace. The local `/api/
 
 ## Customer data
 
-The three supplied PDFs are briefs, not transactional data. No real stock conclusion, supplier identity or commercial approval limit can be derived from them. The actual Soony launch verdict remains unknown.
+The original three PDFs were briefs. The subsequently provided archive supplies the actual stock, shipment, supplier and policy records. It supports an AT RISK assessment under the documented replay assumptions, but does not prove the current physical or released warehouse state.
 
-Register a team in the portal from the brief and obtain the archive and API specification with your team token. The API authentication scheme must be taken from that specification; this prototype does not guess it. Store customer records locally outside Git. Never commit tokens or customer files. No portal credentials were supplied and no account was created.
+Future portal synchronization requires the API specification and team token. The authentication scheme must come from that specification; this prototype does not guess it. Customer records and archive-derived reports are ignored by Git. No portal account was created and no credentials were written to disk.
 
-Normalize actual records to the `sample.json` shape, retain filename/row or page references, set `sample` to `false`, and import the JSON. There is no automatic PDF/OCR/Excel ingestion or live portal sync in this version. CSV/Excel/PDF records require extraction and review first. The AI reader accepts text only. This is an honest integration boundary, not a claim that synthetic fixtures are real customer data.
+The supplied extraction and normalization scripts handle the actual CSV/Excel/text-PDF archive. Scans and conflicting claims need review annotations. The AI reader accepts text only and does not silently overwrite stock. You can also import another snapshot matching the `sample.json` schema, with source references and `sample: false`.
 
 ## Snapshot contract
 
@@ -61,6 +80,6 @@ Imports replace the snapshot and reset its work queue; prior audit events remain
 
 `engine.mjs`: validation, evidence checks, boundary-based packing simulation, prioritized shared stock consumption, action planning. `server.mjs`: loopback HTTP server, serialized mutations, atomic local persistence, optional grounded local model reading. `public/`: responsive UI, safe text rendering, import/export and review workflow. `test.mjs`: numerical and data-integrity regression cases.
 
-This is a **prototype**, not the finished hackathon submission: real customer-data integration, a verified AI model run, stakeholder interviews, a recorded video, and deployment remain outstanding. Pitch narrative and business case are in `solution.txt` and `pitch-script.txt`. No editable PowerPoint deck is included because the required slide authoring runtime is unavailable. No supplier email transport or external messaging is connected.
+This is a **prototype**, not the finished hackathon submission. The actual archive is integrated and assessed. A configured AI model run, stakeholder interviews, supplier responses, a recorded video and deployment remain outstanding. The original generic pitch narrative is in `solution.txt` and `pitch-script.txt`; actual confidential findings are in the ignored customer-data report. No supplier email transport or external messaging is connected.
 
 Local-only operation is deliberate for the supplied folder task and confidential hackathon data. Do not expose this server to a public network; it has no user authentication. Draft/review states do not constitute purchasing authorization.

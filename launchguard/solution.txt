@@ -1,5 +1,7 @@
 LAUNCHGUARD — SOLUTION TO THE LIO CHALLENGE
 
+UPDATE: The subsequently supplied soony-data.zip has now been integrated. Read customer-data/launch-recovery-report.txt for actual findings and current implementation status. The brief-only unknown-data statements below describe the original stage and are superseded by that archive report. Keep confidential customer findings outside public Git history.
+
 1. WHAT THE THREE FILES MEAN
 
 These are one problem statement, a supporting deep dive, and judging guidance. They do not contain the actual purchase orders, stock, contracts or supplier correspondence. The requested solution is a startup prototype with agents doing work and a business case, rather than a written answer to three separate exercises.

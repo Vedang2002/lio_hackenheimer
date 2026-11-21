@@ -10,6 +10,7 @@ const stateDir=join(root,'runtime');
 await mkdir(stateDir,{recursive:true});
 let state;
 try {state=JSON.parse(await readFile(join(stateDir,'state.json'),'utf8'));validate(state.data);} catch(e){if(e.code!=='ENOENT')throw e;state={data:JSON.parse(await readFile(join(root,'sample.json'),'utf8')),actions:[],events:[]};}
+try { const customer=JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8'));validate(customer);if(state.data.sample)state={data:customer,actions:[],events:[{at:new Date().toISOString(),type:'customer-load',detail:'Loaded local customer archive with reviewed evidence; kickoff replay, not a live count.'}]}; }catch(e){if(e.code!=='ENOENT')throw e;}
 let queue=Promise.resolve();
 async function save(){const dest=join(stateDir,'state.json');await writeFile(dest+'.tmp',JSON.stringify(state,null,2));await rename(dest+'.tmp',dest);}
 function event(type,detail){state.events.unshift({at:new Date().toISOString(),type,detail});state.events=state.events.slice(0,100);}
@@ -24,6 +25,9 @@ const server=http.createServer((req,res)=>{
       if(req.method==='POST' && (req.headers['content-type']?.split(';')[0]!=='application/json' || (req.headers.origin && req.headers.origin!==`http://${req.headers.host}`)))return json(res,403,{error:'Same-origin JSON required'});
       if(req.method==='GET'&&publicFiles.has(url.pathname)){const file=publicFiles.get(url.pathname);res.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.css')?'text/css':'text/javascript','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});res.end(await readFile(join(root,'public',file)));return;}
       if(req.method==='GET'&&url.pathname==='/api/state')return json(res,200,{...state,report:assess(state.data),model:env.OLLAMA_MODEL||null});
+      if(req.method==='POST'&&url.pathname==='/api/customer'){
+        const data=validate(JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8')));state={data,actions:[],events:state.events};event('customer-load','Loaded normalized local archive and reviewed evidence.');await save();return json(res,200,{ok:true});
+      }
       if(req.method==='POST'&&url.pathname==='/api/import'){
         const d=validate(await body(req));assess(d);state={data:d,actions:[],events:state.events};event('import','Replaced normalized snapshot; reset action queue.');await save();return json(res,200,{ok:true});
       }

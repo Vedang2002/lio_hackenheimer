@@ -1,0 +1,28 @@
+The three PDFs describe one Lio hackathon challenge. The supplied soony-data.zip has now been analyzed.
+
+OPEN THIS FIRST: launchguard/customer-data/launch-recovery-report.txt
+It contains the actual archive findings, recovery priorities and evidence references.
+
+Run the app from this folder with:
+.\RUN_LAUNCHGUARD.ps1
+Then open http://127.0.0.1:8787
+The launcher can use the bundled Node runtime already present on this computer.
+The app loads the local Soony customer snapshot automatically. This is a labeled kickoff replay, not a live warehouse count.
+
+Your solution is in the launchguard folder:
+
+1. solution.txt — problem analysis, calculations, architecture, business case and office-hour questions.
+2. README.md — setup, demo instructions, data contract and implementation limits.
+3. pitch-script.txt — timed three-minute pitch and recording plan.
+4. server.mjs + engine.mjs + public/ — working local procurement planning prototype.
+5. test.mjs — numerical and data-integrity tests.
+6. sample.json — clearly labeled synthetic data, editable for scenario testing.
+
+To run, install Node.js 22 or later, open a terminal in launchguard, and enter:
+node server.mjs
+Then open http://127.0.0.1:8787
+
+The original three PDFs did not contain customer transactions. Those records are now extracted locally from soony-data.zip, with reviewed corrections and source-linked action drafts.
+The AI document reader also needs a local Ollama model configured; without it the prototype uses deterministic planning tools.
+
+No real suppliers were contacted. No portal account, deployment, PowerPoint deck or demo video was created. The solution and pitch script identify the remaining submission work explicitly.
