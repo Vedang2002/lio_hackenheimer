@@ -1,0 +1,7 @@
+dist/
+outputs/
+.sites-runtime/
+.env*
+node_modules/
+customer-data/
+customer-seed.json

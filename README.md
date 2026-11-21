@@ -6,7 +6,7 @@ Built by **Hackenheimer** for Lio's *Keep the Line Running* challenge, LaunchGua
 
 The application combines a packing forecast, reviewed evidence and a persistent queue of follow-up drafts. It runs locally with Node.js and has no application package dependencies.
 
-> **Status:** the local application and authenticated portal sync work. The reviewed customer snapshot is deployed, with approval, to the **[owner-private LaunchGuard Site](https://launchguard-hackenheimer.lucidcoil32.chatgpt.site)**. Sign in with the owning ChatGPT account. The optional local AI reader has not been validated with a configured model and is disabled in the hosted version.
+> **Status:** the local application and authenticated portal sync work. The reviewed customer snapshot is deployed, with approval, to the **[private LaunchGuard Site](https://launchguard-hackenheimer.lucidcoil32.chatgpt.site)**. Sign in with the owner or an explicitly invited account. The optional local AI reader has not been validated with a configured model and is disabled in the hosted version.
 
 **New: [automatic customer email worker](email-automation/README.md).** The code can read new Gmail messages and send threaded acknowledgments, approved template answers, or drafts on a Google-hosted timer. One-time Google authorization and trigger setup are still required; it is not active merely because Gmail is signed in.
 
@@ -225,6 +225,7 @@ flowchart LR
 | `launchguard/test.mjs` | Core forecast and data-integrity tests |
 | `launchguard/customer.test.mjs` | Private-snapshot integration checks |
 | `email-automation/` | Google-hosted Gmail worker, configuration, manifest, setup guide and mocked-service tests |
+| `deployment/` | GitHub-safe hosted Worker source and build; uses synthetic data by default |
 
 ### Configuration
 
@@ -254,9 +255,11 @@ The browser automation host was unavailable during validation; numerical and API
 
 The local server has no application login and is bound to your computer. It should not be exposed directly as a public service.
 
-A separate hosted adaptation is live at **https://launchguard-hackenheimer.lucidcoil32.chatgpt.site** with owner-only Sites access and durable cloud state. The reviewed customer snapshot was uploaded to that Site and its private source repository with explicit approval. Raw customer documents and the portal token were excluded. The hosted adaptation does not connect to the local Ollama service. Use the local review pipeline and import an updated JSON snapshot to refresh the hosted working data; the restore button returns to the deployed baseline.
+A separate hosted adaptation is live at **https://launchguard-hackenheimer.lucidcoil32.chatgpt.site** with restricted sign-in access for its owner and explicitly invited viewers, plus durable cloud state. The reviewed customer snapshot was uploaded to that Site and its private source repository with explicit approval. Raw customer documents and the portal token were excluded. The hosted adaptation does not connect to the local Ollama service. Use the local review pipeline and import an updated JSON snapshot to refresh the hosted working data; the restore button returns to the deployed baseline.
 
 Hosting reports successful publication, owner-only access was reconfirmed, and an unauthenticated API request returned HTTP 401. Six hosted API tests passed locally, including persistence, deduplication and concurrent-write rejection. A signed-in browser walkthrough remains unverified because the browser access host was unavailable.
+
+That access verification preceded the explicitly requested viewer invitations; the Site remains restricted rather than public. The GitHub-safe hosted implementation is now included under [deployment/](deployment/README.md), where builds use synthetic data by default. The actual reviewed seed remains private.
 
 The customer ZIP, original records, derived reports, local runtime state and private hosted workspace are ignored by Git. This repository contains code, documentation and synthetic test inputs, not the private archive or API token.
 
