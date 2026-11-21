@@ -9,6 +9,9 @@ Then open http://127.0.0.1:8787
 The launcher can use the bundled Node runtime already present on this computer.
 The app loads the local Soony customer snapshot automatically. This is a labeled kickoff replay, not a live warehouse count.
 
+The online version is live at https://launchguard-hackenheimer.lucidcoil32.chatgpt.site
+It is owner-private: sign in with the owning ChatGPT account. The reviewed snapshot was uploaded with approval; the API token and raw documents remain excluded.
+
 To check/download new portal data, run .\SYNC_SOONY.ps1 and enter the API token at its hidden prompt. Add -CheckOnly to compare hashes without downloading files. The token is not saved. Review any changed evidence before regenerating the analysis.
 
 Your solution is in the launchguard folder:
@@ -27,4 +30,4 @@ Then open http://127.0.0.1:8787
 The original three PDFs did not contain customer transactions. Those records are now extracted locally from soony-data.zip, with reviewed corrections and source-linked action drafts.
 The AI document reader also needs a local Ollama model configured; without it the prototype uses deterministic planning tools.
 
-No real suppliers were contacted. No portal account, deployment, PowerPoint deck or demo video was created. The solution and pitch script identify the remaining submission work explicitly.
+No real suppliers were contacted. No portal account, PowerPoint deck or demo video was created. The private deployment is complete; the solution and pitch script identify the remaining submission work.

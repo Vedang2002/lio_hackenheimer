@@ -6,7 +6,7 @@ Built by **Hackenheimer** for Lio's *Keep the Line Running* challenge, LaunchGua
 
 The application combines a packing forecast, reviewed evidence and a persistent queue of follow-up drafts. It runs locally with Node.js and has no application package dependencies.
 
-> **Status:** the local application and authenticated portal sync work. A private hosted adaptation has been prepared but is **not deployed**; uploading the reviewed customer snapshot is awaiting approval. The optional local AI reader has not been validated with a configured model.
+> **Status:** the local application and authenticated portal sync work. The reviewed customer snapshot is deployed, with approval, to the **[owner-private LaunchGuard Site](https://launchguard-hackenheimer.lucidcoil32.chatgpt.site)**. Sign in with the owning ChatGPT account. The optional local AI reader has not been validated with a configured model and is disabled in the hosted version.
 
 ## Problem statement
 
@@ -240,7 +240,9 @@ The browser automation host was unavailable during validation; numerical and API
 
 The local server has no application login and is bound to your computer. It should not be exposed directly as a public service.
 
-A separate hosted adaptation has been prepared with owner-private Sites access and durable cloud state, but **publication has not completed**. Uploading the reviewed customer snapshot is awaiting explicit approval. A reserved Site address is not proof of a live deployment. The hosted adaptation does not connect to the local Ollama service.
+A separate hosted adaptation is live at **https://launchguard-hackenheimer.lucidcoil32.chatgpt.site** with owner-only Sites access and durable cloud state. The reviewed customer snapshot was uploaded to that Site and its private source repository with explicit approval. Raw customer documents and the portal token were excluded. The hosted adaptation does not connect to the local Ollama service. Use the local review pipeline and import an updated JSON snapshot to refresh the hosted working data; the restore button returns to the deployed baseline.
+
+Hosting reports successful publication, owner-only access was reconfirmed, and an unauthenticated API request returned HTTP 401. Six hosted API tests passed locally, including persistence, deduplication and concurrent-write rejection. A signed-in browser walkthrough remains unverified because the browser access host was unavailable.
 
 The customer ZIP, original records, derived reports, local runtime state and private hosted workspace are ignored by Git. This repository contains code, documentation and synthetic test inputs, not the private archive or API token.
 
@@ -251,7 +253,7 @@ The customer ZIP, original records, derived reports, local runtime state and pri
 - **Manual evidence review:** scan interpretation and conflicting claims are not fully automated. Arbitrary future schema or delimiter changes can require parser updates.
 - **Draft-only actions:** supplier email, purchases, bookings and SAP changes are not connected. Review states do not grant authority or resolve shortages.
 - **Bounded audit history:** the server keeps the latest 100 events, not an immutable compliance log.
-- **Submission work remains:** verified AI execution, stakeholder interviews, supplier responses, a recorded video and completed deployment are still outstanding.
+- **Submission work remains:** verified AI execution, stakeholder interviews, supplier responses and a recorded video are still outstanding.
 
 ## Business value
 
