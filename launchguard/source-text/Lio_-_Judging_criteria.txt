@@ -1,0 +1,156 @@
+LIO CHALLENGE · START HACK MUNICH 2026 · JUDGING
+How We
+Judge.
+No trick questions, no hidden metric. We judge your team the way an investor
+and a customer would judge a young startup: Does the story stick? Is there a
+business? Does it really work? Would people want to use it? And can you
+show it, live?
+01
+The entry ticket
+02
+Four criteria
+03
+In detail
+04
+Demo format
+01–02
+ AT A GLANCE
+One ticket.
+Four criteria.
+To be judged, you need a live demo and your hand-in. After that, four criteria decide.
+THE ENTRY TICKET
+A live demo, plus everything handed in on time.
+✓
+Your system runs live, in front of the jury
+✓
+A working prototype (deployed if possible)
+✓
+Your pitch deck
+✓
+A demo video, 3 minutes max
+✓
+Your repo
+✓
+Submitted by Sunday 1200
+01
+A pitch that sticks
+A clear story from problem to solution to impact.
+Make us remember you.
+02
+A real business case
+Well motivated: why this, why now, what is it
+worth? And it works beyond Soony.
+03
+Technical depth
+Agents that actually do the work. Real integration
+of messy data, nothing hardcoded.
+04
+Taste
+Does it look and feel like a real product? A
+consistent design, a clear UX and the small details
+count.
+Lio Challenge · Judging
+03
+ IN DETAIL
+01
+A pitch that sticks
+Five teams later, the jury should still remember yours. Funny, wild or deadly serious: your call.
+WHAT WE ASK OURSELVES
+?
+Do we understand the problem in the first 30 seconds?
+?
+Is there a clear line from what hurts at Soony to what you built?
+?
+Did you use what you learned from Soonyʼs team, not just from the data?
+STRONG
+A story with a real moment in it: “On Saturday,
+Felix told us… so we built…ˮ
+WEAK
+A feature tour. Ten slides of architecture before we
+know why it matters.
+02
+A real business case
+Soony is your first customer, not your only one. Show us a company, not a one-off project.
+WHAT WE ASK OURSELVES
+?
+Is it well motivated: why this problem, why now, and what is it worth in money or time?
+?
+Why would Soony pay for it, and roughly how much?
+?
+Who else has this problem? Does it work beyond one game launch?
+STRONG
+A number the customer cares about, and a clear
+path to the next ten customers.
+WEAK
+“The market is huge.ˮ A solution that only works
+for this one weekend.
+Lio Challenge · Judging
+03
+ IN DETAIL
+03
+Technical depth
+The one rule of the challenge: agents do real work. They read, decide and act, on data that is messy and
+keeps changing.
+WHAT WE ASK OURSELVES
+?
+Do your agents take real actions (decide, write, escalate), or do they only summarize?
+?
+Is there a solid architecture: tool use, reasoning, state, not one big prompt?
+?
+How do you handle messy and contradictory data? Is anything hardcoded?
+?
+When a new drop arrives, does your system cope, or do you rebuild it?
+STRONG
+Agents that take real actions on the messy data.
+The team can explain what happens when the
+system gets something wrong.
+WEAK
+A chat window around one prompt. Values copied
+from the data into the code.
+04
+Taste
+Soonyʼs team has ten minutes and forty dashboards. Build something that looks and feels like a product
+they actually want to open.
+WHAT WE ASK OURSELVES
+?
+Does it look and feel like a real product?
+?
+Is it all of a piece: one design language, a clear layout, nothing that feels bolted on?
+?
+Would the people you interviewed use this on a stressful Sunday?
+?
+Are the small details right: wording, defaults, the moment a human has to decide?
+STRONG
+It feels like one product: a clean, consistent
+design, a clear recommendation and one click to
+act.
+WEAK
+Every number on one screen, mixed styles and
+default components. The user has to figure out
+what to do.
+Lio Challenge · Judging
+04
+ DEMO FORMAT
+Your 5 minutes.
+Use them well.
+You have 3 minutes to pitch on stage, then 2 minutes of questions from the jury.
+1
+The problem
+What hurts at Soony, and what
+you learned by asking.
+2
+Your system
+Agents at work on real
+customer data. Live.
+3
+The business
+Why Soony pays for it, and
+who else would.
+Tips from the jury
+Show, donʼt tell.
+ Start the demo early. Slides are support, not the show.
+Have a backup.
+ If the Wi-Fi dies, your demo video saves you. Still, the live run is what counts.
+Go deep, not wide.
+ One problem solved properly beats a tour of everything.
+Lio Challenge · Judging

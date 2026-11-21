@@ -1,0 +1,21 @@
+{
+  "sample": true,
+  "now": "2026-11-21T06:00:00+01:00",
+  "deadline": "2026-11-22T20:00:00+01:00",
+  "staleHours": 12,
+  "shifts": [{"start":"2026-11-21T06:00:00+01:00","end":"2026-11-21T22:00:00+01:00"},{"start":"2026-11-22T06:00:00+01:00","end":"2026-11-22T20:00:00+01:00"}],
+  "products": [
+    {"id":"CE","name":"Collector's Edition","priority":0,"target":72000,"packed":46800,"rate":900,"bom":{"card":1,"case":1,"sleeve":1,"leaflet":1,"steelbook":1,"artbook":1,"serial":1},"source":"Brief totals; synthetic BOM, priority and rate"},
+    {"id":"STD","name":"Standard Edition","priority":1,"target":640000,"packed":512000,"rate":4800,"bom":{"card":1,"case":1,"sleeve":1,"leaflet":1},"source":"Brief totals; synthetic BOM and total rate across three lines"}
+  ],
+  "components": [
+    {"id":"card","erp":153200,"usable":153200,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / stock-count.csv row 1"},
+    {"id":"case","erp":153200,"usable":153200,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / stock-count.csv row 2"},
+    {"id":"sleeve","erp":153200,"usable":153200,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / stock-count.csv row 3"},
+    {"id":"leaflet","erp":153200,"usable":153200,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / stock-count.csv row 4"},
+    {"id":"steelbook","erp":25200,"usable":22000,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / dock-inspection.txt"},
+    {"id":"artbook","erp":25200,"usable":25200,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / stock-count.csv row 6"},
+    {"id":"serial","erp":25200,"usable":25200,"observedAt":"2026-11-21T05:00:00+01:00","source":"SYNTHETIC / stock-count.csv row 7"}
+  ],
+  "lots": [{"id":"SB-RECOVERY","component":"steelbook","qty":3200,"eta":"2026-11-22T18:00:00+01:00","status":"unconfirmed","released":false,"updatedAt":"2026-11-20T10:00:00+01:00","source":"SYNTHETIC / supplier-message.txt"}]
+}
