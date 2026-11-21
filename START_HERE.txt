@@ -12,9 +12,9 @@ The app loads the local Soony customer snapshot automatically. This is a labeled
 The online version is live at https://launchguard-hackenheimer.lucidcoil32.chatgpt.site
 It is private: sign in with the owner or an explicitly invited account. The reviewed snapshot was uploaded with approval. Tokens stay in secure runtime settings; raw customer records stay out of GitHub.
 
-Automatic Soony checks, the chatbot and priority email workflow are described in AUTOMATION.md. Local checks run every five minutes when SOONY_API_TOKEN is set. The hosted updater supports a linked cloud timer. Changed files create review tasks; stock and release assumptions still require evidence review.
+Automatic Soony checks, the chatbot and prioritized task workflow are described in AUTOMATION.md. Local checks run every five minutes when SOONY_API_TOKEN is set. The hosted updater supports a linked cloud timer. Changed files create review tasks; stock and release assumptions still require evidence review.
 
-Automatic Gmail: support.hackenheimer@gmail.com is now authorized for the direct hosted worker. An hourly background task is enabled (the hosting scheduler's limit). New eligible mail gets priority receipts or exact recipient/reference approved answers. Send a fresh test email from another account to verify end-to-end delivery. Read AUTOMATION.md for operations and the alternative one-minute Apps Script worker.
+Gmail access has been removed from the code and hosted website. No automatic email reading or replies are enabled. Gmail account access and the password are unchanged.
 
 Your solution is in the launchguard folder:
 

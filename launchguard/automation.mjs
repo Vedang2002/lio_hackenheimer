@@ -19,7 +19,7 @@ export function answerFromEvidence(question, state, report) {
   const issues=report.issues.map(i=>({...i,score:words.reduce((n,w)=>n+(String(i.title+' '+i.kind+' '+i.owner).toLowerCase().includes(w)?1:0),0)})).sort((a,b)=>b.score-a.score);
   const sources=[]; let answer;
   if(/hello|^hi\b|what can you|help me/.test(q))answer='Hi! I can explain launch risks, find evidence, show the highest-priority tasks, and explain email or data-sync status. Try “What should I focus on first?” or ask about a component or shipment.';
-  else if(/email|gmail|auto.?reply|inbox/.test(q))answer=state.email?.lastSeenAt?`The support inbox worker last checked in at ${state.email.lastSeenAt}. Replies are sent from support.hackenheimer@gmail.com after Google authorization. Check the queue for each message’s confirmed or uncertain send status.`:'The email worker is ready to install, but this dashboard has no confirmed Google connection. Open “Connect support inbox” to authorize support.hackenheimer@gmail.com and start its hosted hourly timer or the alternative one-minute Google timer. Signing into Gmail alone does not activate it.';
+  else if(/email|gmail|auto.?reply|inbox/.test(q))answer='Email integration has been removed. This application cannot read or send Gmail messages.';
   else if(/sync|latest data|up.to.date/.test(q))answer=state.portalSync?.checkedAt?`Soony was last checked at ${state.portalSync.checkedAt}. ${state.portalSync.failed?'The check failed; the previous forecast is retained.':state.portalSync.requiresReview?'Changed files need evidence review; the displayed forecast remains based on its earlier reviewed snapshot.':'The source index matches the reviewed forecast.'} File downloads do not prove deliveries or release stock.`:'Automatic Soony checks need the server-side SOONY_API_TOKEN and an unattended timer. The current forecast is based on the reviewed snapshot shown above.';
   else if(/priority|focus|first|task|queue/.test(q)) {
     const tasks=state.actions.filter(a=>a.active!==false&&!['dismissed','reviewed'].includes(a.state)).slice(0,3);
@@ -46,30 +46,4 @@ export async function chatAnswer(question,state,report,env={},fetcher=fetch) {
     if(typeof answer!=='string'||!answer.trim())throw Error('Empty model answer');
     return {...grounded,answer:answer.slice(0,5000),mode:'ai',notice:'AI explanation of retrieved evidence. Verify quantities and decisions against the cited sources.'};
   }catch{return {...grounded,notice:'AI is unavailable; showing the evidence-based answer instead.'};}
-}
-export function emailPlan(state, input, now=new Date().toISOString()) {
-  if(!input||!/^[-\w]{1,128}$/.test(input.id)||!/^[-\w]{1,128}$/.test(input.threadId)||typeof input.subject!=='string'||input.subject.length>700||typeof input.text!=='string'||input.text.length>30000||typeof input.from!=='string'||!/^\S+@[^\s@]+\.[^\s@]+$/.test(input.from))throw Error('Invalid inbox message.');
-  const id='mail-'+input.id,from=input.from.toLowerCase(),text=(input.subject+' '+input.text).toLowerCase();
-  let task=state.actions.find(a=>a.id===id);
-  if(!task){
-    const matches=state.actions.filter(a=>a.active!==false&&a.state!=='dismissed'&&a.kind!=='customer-email'&&a.customerReply?.recipient===from&&a.customerReply.matchAny.some(t=>text.includes(t.toLowerCase())));
-    const match=matches.length===1?matches[0]:null;
-    const priority=match?.priority||priorityFor(text);
-    const reply=match?.customerReply.body || `Thank you for contacting Hackenheimer. We received your message${priority==='high'?' and flagged it as high priority':priority==='medium'?' and flagged it for timely review':''}. This is an automatic receipt; our team has not yet reviewed or resolved your request.\n\nHackenheimer Support`;
-    task={id,kind:'customer-email',title:input.subject||'Customer message',owner:'Hackenheimer Support',source:'Gmail / '+input.id,createdAt:now,state:'queued',workflow:'reply',priority,active:true,from,threadId:input.threadId,body:reply,linkedTaskId:match?.id||null,replyPolicy:match?'approved-answer':'receipt'};
-    // Store metadata and the outgoing reply only, not the incoming email body.
-    state.actions.push(task);
-  }
-  return {taskId:id,priority:task.priority,reply:task.body,policy:task.replyPolicy,alreadySent:task.state==='sent'};
-}
-export function emailResult(state,input,now=new Date().toISOString()) {
-  const task=state.actions.find(a=>a.id===input.taskId&&a.kind==='customer-email');
-  if(!task||!['sent','uncertain','drafted'].includes(input.status))throw Error('Invalid email result.');
-  if(task.state==='sent')return;
-  task.state=input.status;task.updatedAt=now;if(typeof input.gmailId==='string')task.outgoingGmailId=input.gmailId.slice(0,128);
-}
-export function approveCustomerReply(state,input) {
-  const task=state.actions.find(a=>a.id===input.id&&a.kind!=='customer-email');
-  if(!task||typeof input.recipient!=='string'||!/^[-\w.+]+@[-\w.]+\.[a-z]{2,}$/i.test(input.recipient)||typeof input.body!=='string'||!input.body.trim()||input.body.length>5000||!Array.isArray(input.matchAny)||!input.matchAny.length||input.matchAny.some(t=>typeof t!=='string'||t.trim().length<4||t.length>150))throw Error('Provide a task, exact recipient, matching reference and approved public reply.');
-  task.customerReply={recipient:input.recipient.toLowerCase(),body:input.body,matchAny:input.matchAny.map(t=>t.trim())};
 }

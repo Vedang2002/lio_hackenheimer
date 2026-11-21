@@ -12,14 +12,7 @@ function renderActions(){
     const d=node('details');d.append(node('summary',a.kind==='customer-email'?'View reply':'View evidence request'),node('pre',a.body));n.append(d);
     if(!finished(a)&&a.kind!=='customer-email'){
       for(const [s,title]of [['reviewed','Mark reviewed'],['dismissed','Dismiss']]){const b=node('button',title);b.onclick=()=>act(b,async()=>{await api('action',{id:a.id,state:s});await refresh();});n.append(b);}
-      const approved=node('details');approved.append(node('summary','Approve a customer-facing answer'));
-      approved.append(node('p','This exact answer may be emailed automatically only to the specified address when their message includes the reference. Include only information approved for that customer.','muted'));
-      const form=node('form');
-      function field(title,type,value){const label=node('label',title),input=node(type==='textarea'?'textarea':'input');if(type!=='textarea')input.type=type;input.required=true;input.value=value||'';label.append(input);form.append(label);return input;}
-      const recipient=field('Exact customer email','email',a.customerReply?.recipient),reference=field('Reference or phrase in their message','text',a.customerReply?.matchAny?.[0]),reply=field('Approved public reply','textarea',a.customerReply?.body);
-      reply.maxLength=5000;reference.minLength=4;reference.maxLength=150;
-      const save=node('button','Approve automatic reply');save.type='submit';form.append(save);
-      form.onsubmit=e=>{e.preventDefault();act(save,async()=>{await api('customer-reply',{id:a.id,recipient:recipient.value.trim(),matchAny:[reference.value.trim()],body:reply.value.trim()});await refresh();});};approved.append(form);n.append(approved);
+
     }
     return n;
   }));
@@ -33,8 +26,6 @@ async function refresh(){
     if(state.portalSync?.requiresReview&&!r.sample)el('sample').textContent+=' Source changes or an unverified source connection need attention; earlier reviewed forecast retained.';
     el('status').textContent=r.status;el('summary').textContent=`${num(r.products.reduce((s,p)=>s+p.gap,0))} copies short under this plan · ${r.hours.toFixed(1)} packing hours from snapshot · ${new Date(r.snapshot).toLocaleString('en-GB',{timeZone:'Europe/Berlin'})} CET`;
     el('sync-status').textContent=!state.syncConfigured?'Automatic connection needs a server-side Soony token.':state.portalSync?.failed?'Latest check failed. Previous forecast retained.':state.portalSync?.checkedAt?`Last checked ${new Date(state.portalSync.checkedAt).toLocaleString()}. ${state.portalSync.requiresReview?'Updated files need review.':'Reviewed source hashes match.'} ${state.portalSync.pendingDownloads?state.portalSync.pendingDownloads+' downloads pending.':''}`:'Automatic checks configured; waiting for the first run.';
-    const heartbeat=state.email?.lastSeenAt,age=heartbeat?Date.now()-Date.parse(heartbeat):Infinity;
-    el('email-status').textContent=age<(state.email?.transport==='hosted-oauth'?4500000:300000)?`Worker checked in ${new Date(heartbeat).toLocaleTimeString()}. Sender: support.hackenheimer@gmail.com.`:heartbeat?'No recent worker check-in. Check the Google timer and credentials.':'Not connected to this dashboard. Google authorization and worker setup required.';
     const open=state.actions.filter(a=>a.active!==false&&!['reviewed','dismissed','sent','drafted'].includes(a.state));el('queue-status').textContent=`${open.length} open · ${open.filter(a=>a.priority==='high').length} high priority. Automatically ranked.`;
     el('chat-mode').textContent=state.model||state.chatMode==='ai'?'AI + evidence':'Evidence assistant · AI model not connected';
     el('products').replaceChildren(...r.products.map(p=>{const card=node('article',undefined,'product');card.append(node('h2',p.name));const q=node('div',num(p.projected),'quantity');q.append(node('small',` / ${num(p.target)} projected`));card.append(q);const bar=node('div',undefined,'meter');for(const [cls,val]of [['packed',p.packed],['forecast',p.projected-p.packed]]){const seg=node('div',undefined,cls);seg.style.width=(100*val/p.target)+'%';bar.append(seg);}card.append(bar);const facts=node('div',undefined,'facts');facts.append(node('span',`${num(p.packed)} already packed`),node('span',`${num(p.gap)} short`),node('span',`${p.requiredRate?.toFixed(0)??'—'}/h needed`));card.append(facts);return card;}));

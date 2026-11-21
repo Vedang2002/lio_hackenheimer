@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {join,dirname} from 'node:path';
 import {assess,planActions,validate} from './engine.mjs';
-import {automateQueue,chatAnswer,emailPlan,emailResult,approveCustomerReply} from './automation.mjs';
+import {automateQueue,chatAnswer} from './automation.mjs';
 import {syncSoony} from './soony-sync.mjs';
 
 const env=globalThis.process?.env ?? {};
@@ -20,7 +20,7 @@ async function automaticRun(){await syncSoony(state,fileStore,env.SOONY_API_TOKE
 function event(type,detail){state.events.unshift({at:new Date().toISOString(),type,detail});state.events=state.events.slice(0,100);}
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
 async function body(req){let s='';for await(const c of req){s+=c;if(s.length>2_000_000)throw Error('Request exceeds 2 MB');}return JSON.parse(s||'{}');}
-const publicFiles=new Map([['/','index.html'],['/app.js','app.js'],['/style.css','style.css'],['/email-setup.html','email-setup.html'],['/email-automation/Code.gs','../../email-automation/Code.gs'],['/email-automation/Config.gs','../../email-automation/Config.gs'],['/email-automation/appsscript.json','../../email-automation/appsscript.json']]);
+const publicFiles=new Map([['/','index.html'],['/app.js','app.js'],['/style.css','style.css'],['/email-setup.html','email-setup.html']]);
 const server=http.createServer((req,res)=>{
   const run=async()=>{
     const url=new URL(req.url,'http://localhost');
@@ -29,16 +29,12 @@ const server=http.createServer((req,res)=>{
       if(req.method==='POST' && (req.headers['content-type']?.split(';')[0]!=='application/json' || (req.headers.origin && req.headers.origin!==`http://${req.headers.host}`)))return json(res,403,{error:'Same-origin JSON required'});
       if(req.method==='GET'&&publicFiles.has(url.pathname)){const file=publicFiles.get(url.pathname);res.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.css')?'text/css':'text/javascript','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});res.end(await readFile(join(root,'public',file)));return;}
       if(req.method==='GET'&&url.pathname==='/api/state'){
-        automateQueue(state,assess(state.data));const view=structuredClone(state);if(view.portalSync)delete view.portalSync.downloadedChecksums;
-        return json(res,200,{...view,report:assess(state.data),model:env.OLLAMA_MODEL||null,syncConfigured:!!env.SOONY_API_TOKEN,emailBridgeConfigured:!!env.EMAIL_BRIDGE_SECRET});
+        automateQueue(state,assess(state.data));const view=structuredClone(state);delete view.gmail;view.email={enabled:false,removed:true};if(view.portalSync)delete view.portalSync.downloadedChecksums;
+        return json(res,200,{...view,report:assess(state.data),model:env.OLLAMA_MODEL||null,syncConfigured:!!env.SOONY_API_TOKEN,emailAccess:false});
       }
-      if(req.method==='POST'&&url.pathname.startsWith('/api/email/')&&(!env.EMAIL_BRIDGE_SECRET||req.headers['x-launchguard-email-key']!==env.EMAIL_BRIDGE_SECRET))return json(res,403,{error:'Email worker authorization required'});
+      if(url.pathname.startsWith('/api/email/')||url.pathname==='/api/customer-reply'||url.pathname.startsWith('/email-automation/'))return json(res,410,{error:'Email integration removed',emailAccess:false});
       if(req.method==='POST'&&url.pathname==='/api/chat')return json(res,200,await chatAnswer((await body(req)).question,state,assess(state.data),env));
       if(req.method==='POST'&&url.pathname==='/api/automation'){await automaticRun();return json(res,200,{ok:!state.portalSync.failed});}
-      if(req.method==='POST'&&url.pathname==='/api/customer-reply'){approveCustomerReply(state,await body(req));await save();return json(res,200,{ok:true});}
-      if(req.method==='POST'&&url.pathname==='/api/email/plan'){automateQueue(state,assess(state.data));const result=emailPlan(state,await body(req));state.email={account:'support.hackenheimer@gmail.com',lastSeenAt:new Date().toISOString()};await save();return json(res,200,result);}
-      if(req.method==='POST'&&url.pathname==='/api/email/result'){emailResult(state,await body(req));await save();return json(res,200,{ok:true});}
-      if(req.method==='POST'&&url.pathname==='/api/email/heartbeat'){state.email={account:'support.hackenheimer@gmail.com',lastSeenAt:new Date().toISOString(),enabled:(await body(req)).enabled===true};await save();return json(res,200,{ok:true});}
       if(req.method==='POST'&&url.pathname==='/api/customer'){
         const data=validate(JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8')));state={...state,data,actions:state.actions.filter(a=>a.kind==='customer-email')};event('customer-load','Loaded normalized local archive and reviewed evidence.');await save();return json(res,200,{ok:true});
       }

@@ -6,9 +6,9 @@ Built by **Hackenheimer** for Lio's *Keep the Line Running* challenge, LaunchGua
 
 The application combines a packing forecast, reviewed evidence, a conversational assistant and an automatically prioritized work queue. It runs locally with Node.js and has no application package dependencies.
 
-> **Status:** the reviewed customer snapshot is deployed, with approval, to the **[private LaunchGuard Site](https://launchguard-hackenheimer.lucidcoil32.chatgpt.site)**. Sign in with the owner or an explicitly invited account. Soony sync and support Gmail OAuth were verified live, and an hourly background task is enabled. The chatbot works from evidence now; its optional free-tier Gemini adapter needs an API key and explicit data-sharing approval. Local Ollama is also supported. No test customer email has been sent; end-to-end delivery still needs a fresh message from another account.
+> **Status:** Gmail integration and automatic replies have been removed at the user's request. The code and hosted website no longer have mailbox access. Soony sync, the evidence assistant and procurement planning remain available.
 
-**Automatic operations:** [setup, approach and operating guide](AUTOMATION.md). Soony files are checked without a Sync button, tasks are created and ranked automatically, and the assistant explains current evidence. The direct Gmail worker is authorized to read and reply through **support.hackenheimer@gmail.com**, using priority receipts or exact recipient/reference approved task answers. It writes send status to the dashboard without an Apps Script bridge. Polling is hourly under this hosting scheduler; a separate Google Apps Script option supports a one-minute timer.
+**Automatic operations:** [current operating guide](AUTOMATION.md). Soony files and planning tasks update automatically. Gmail connectivity, OAuth helpers and email transports have been removed.
 
 ## Problem statement
 
@@ -87,7 +87,6 @@ The forecast and action planner are deterministic tools. Without a configured mo
 | Customer pipeline | Extraction, normalization, material audit and conditional scenario outputs |
 | Automatic Soony sync | Unattended file checks, verified changed-file downloads and versioned evidence-review tasks |
 | Optional local AI | Multilingual text reading with verbatim-quote checks |
-| Automatic customer email | Google-hosted priority worker with recipient-bound task answers, receipts, send-status bridge, deduplication and write limits; requires Google authorization |
 
 ## Requirements and quick start
 
@@ -192,13 +191,9 @@ node .\launchguard\server.mjs
 
 Under **Evidence workspace**, expand **Read a supplier document with local AI**, enter its source name and paste the original text. The server calls the local Ollama endpoint at `http://127.0.0.1:11434/api/chat`. Review the claims, quotes and uncertainty before changing the normalized snapshot. The reader accepts text, not uploaded PDFs or images.
 
-## Automatically read and reply to Gmail
+## Gmail access removed
 
-The current hosted deployment uses the user's authorized **Desktop OAuth client** and the direct Gmail worker. It verifies **support.hackenheimer@gmail.com**, reads new messages, sends threaded priority receipts or recipient-bound approved task answers, and updates the dashboard queue. Its offline grant is stored in Site secrets. An hourly cloud task is enabled, so your computer can be off. See [direct OAuth setup and operations](AUTOMATION.md#direct-hosted-oauth-recommended-with-a-desktop-client). Set `GMAIL_ENABLED=false` in the Site runtime and deploy to pause it; revoke the app in Google account security to revoke access.
-
-The alternative **Apps Script** transport provides a one-minute Google timer. It supports `task_queue`, `acknowledge`, `approved_rules` and `draft` modes, plus an optional private bridge for dashboard policies/status. Follow [email-automation/README.md](email-automation/README.md) if choosing that route. Do not enable both transports for the same mailbox. Neither worker invents AI answers or automatically forwards private procurement findings.
-
-The support-account grant and live API refresh were verified. The first direct-worker run read 0 eligible messages and sent 0 replies. Send a new email from another account after activation to verify end-to-end delivery on the next hourly run. Google may expire a Testing-mode refresh grant or impose service quotas; the dashboard reports errors rather than silently claiming a healthy connection.
+The user requested removal of the application's Gmail access. Mailbox credentials, OAuth setup tools, email transports and reply controls have been removed. The Gmail account and password are unchanged. The code cannot read or send email.
 
 ## Architecture and repository structure
 
@@ -225,7 +220,6 @@ flowchart LR
 | `launchguard/runtime/state.json` | Saved working state; untracked |
 | `launchguard/test.mjs` | Core forecast and data-integrity tests |
 | `launchguard/customer.test.mjs` | Private-snapshot integration checks |
-| `email-automation/` | Google-hosted Gmail worker, configuration, manifest, setup guide and mocked-service tests |
 | `deployment/` | GitHub-safe hosted Worker source and build; uses synthetic data by default |
 
 ### Configuration
@@ -243,14 +237,14 @@ These are process environment variables. The application does not automatically 
 From the repository root:
 
 ```powershell
-node --test .\launchguard\test.mjs .\launchguard\customer.test.mjs .\launchguard\automation.test.mjs .\email-automation\email.test.mjs
+node --test .\launchguard\test.mjs .\launchguard\customer.test.mjs .\launchguard\automation.test.mjs
 node .\deployment\build.mjs
 node --test .\deployment\worker.test.mjs
 ```
 
 The verified local dataset passes **16 tests**. Coverage includes working windows, early/late arrivals, shared stock, received-lot accounting, stale/overdue supply, invalid inputs, deduplicated actions and reviewed customer normalization. Four customer-specific tests skip on a fresh clone without the private snapshot. Recorded verification scope is in [verification.json](launchguard/verification.json).
 
-The combined suite now has **57 passing tests** with the private snapshot present: 16 forecast/customer tests, 19 Apps Script tests, 7 direct Gmail OAuth tests, 7 automation/chat/sync tests and 8 hosted integration tests. External services and Gmail are mocked; passing tests do not confirm live OAuth, provider availability or email delivery. See [AUTOMATION.md](AUTOMATION.md) for the current full test commands.
+The current suite has **30 passing tests** with private customer inputs present, including regression coverage that rejects removed email endpoints.
 
 The browser automation host was unavailable during validation; numerical and API checks passed. A configured Ollama run remains unverified. Tests do not validate supplier promises, physical counts or commercial approvals.
 
@@ -258,7 +252,7 @@ The browser automation host was unavailable during validation; numerical and API
 
 The local server has no application login and is bound to your computer. It should not be exposed directly as a public service.
 
-A separate hosted adaptation is live at **https://launchguard-hackenheimer.lucidcoil32.chatgpt.site** with restricted sign-in access for its owner and explicitly invited viewers, plus durable cloud state. The reviewed snapshot was uploaded to that Site and its private source repository with explicit approval. Automatic downloads store changed evidence in private R2; portal and Gmail credentials are runtime secrets, outside source. The hosted adaptation does not connect to local Ollama. Review changed evidence and import a normalized snapshot to update the forecast; raw synchronization does not establish usable stock or release authority.
+A separate hosted adaptation is live at **https://launchguard-hackenheimer.lucidcoil32.chatgpt.site** with restricted sign-in access for its owner and explicitly invited viewers, plus durable cloud state. The reviewed snapshot was uploaded to that Site and its private source repository with explicit approval. Automatic downloads store changed evidence in private R2; the portal credential remains a runtime secret; Gmail credentials have been deleted. The hosted adaptation does not connect to local Ollama. Review changed evidence and import a normalized snapshot to update the forecast; raw synchronization does not establish usable stock or release authority.
 
 Hosting reports successful publication, owner-only access was reconfirmed, and an unauthenticated API request returned HTTP 401. Six hosted API tests passed locally, including persistence, deduplication and concurrent-write rejection. A signed-in browser walkthrough remains unverified because the browser access host was unavailable.
 
@@ -271,7 +265,7 @@ The customer ZIP, original records, derived reports, local runtime state and pri
 - **Fixed-priority scheduling:** assumes dedicated edition capacity and declared shared-stock priority. It is not an optimization solver; setup, staffing and loading buffers need input modeling or separate checks.
 - **Archive-based planning:** current counts, revisions, approvals, actual packed progress and usable arrival times need operational confirmation.
 - **Manual evidence review:** scan interpretation and conflicting claims are not fully automated. Arbitrary future schema or delimiter changes can require parser updates.
-- **Procurement actions remain drafts:** purchases, bookings and SAP changes are not connected. The separate customer email worker requires its own Google setup and uses approved text; review states do not grant purchasing authority or resolve shortages.
+- **Procurement actions remain drafts:** purchases, bookings and SAP changes are not connected. Email integration has been removed; review states do not grant purchasing authority or resolve shortages.
 - **Bounded audit history:** the server keeps the latest 100 events, not an immutable compliance log.
 - **Submission work remains:** verified AI execution, stakeholder interviews, supplier responses and a recorded video are still outstanding.
 

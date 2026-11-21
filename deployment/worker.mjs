@@ -31,19 +31,15 @@ export default {
         if(request.headers.get('Content-Type')?.split(';')[0]!=='application/json')return json({error:'JSON required'},415);
         const origin=request.headers.get('Origin');if(origin&&origin!==url.origin)return json({error:'Same-origin request required'},403);
       }
+      if(url.pathname.startsWith('/api/email/')||url.pathname==='/api/customer-reply'||url.pathname.startsWith('/email-automation/'))return json({error:'Email integration removed',emailAccess:false},410);
       const {state,etag}=await readState(env.BUCKET);
       if(request.method==='GET'&&url.pathname==='/api/state'){
-        const view=structuredClone(state);automateQueue(view,assess(view.data));
+        const view=structuredClone(state);delete view.gmail;view.email={enabled:false,removed:true};automateQueue(view,assess(view.data));
         if(view.portalSync)delete view.portalSync.downloadedChecksums;
-        return json({...view,report:assess(view.data),model:null,hosted:true,chatMode:env.GEMINI_API_KEY&&env.GEMINI_MODEL&&env.AI_DATA_SHARING==='enabled'?'ai':'evidence',syncConfigured:!!env.SOONY_API_TOKEN,emailBridgeConfigured:!!env.EMAIL_BRIDGE_SECRET});
+        return json({...view,report:assess(view.data),model:null,hosted:true,chatMode:env.GEMINI_API_KEY&&env.GEMINI_MODEL&&env.AI_DATA_SHARING==='enabled'?'ai':'evidence',syncConfigured:!!env.SOONY_API_TOKEN,emailAccess:false});
       }
       if(request.method!=='POST')return json({error:'Not found'},404);
       const body=await parseBody(request);
-      // Email caller also passes the Site service-access header through dispatch. The narrow
-      // bridge secret prevents invited dashboard visitors from impersonating the Gmail worker.
-      if(url.pathname.startsWith('/api/email/')){
-        if(!env.EMAIL_BRIDGE_SECRET||request.headers.get('X-LaunchGuard-Email-Key')!==env.EMAIL_BRIDGE_SECRET)return json({error:'Email worker authorization required'},403);
-      }
       let result={ok:true};
       switch(url.pathname){
         case '/api/chat':automateQueue(state,assess(state.data));return json(await chatAnswer(body.question,state,assess(state.data),{GEMINI_API_KEY:env.GEMINI_API_KEY,GEMINI_MODEL:env.GEMINI_MODEL,AI_DATA_SHARING:env.AI_DATA_SHARING}));
@@ -53,15 +49,8 @@ export default {
           event(state,'automatic-run',`Prioritized work queue; ${created} new tasks. ${state.portalSync.failed?'Soony check needs attention.':'Soony files checked.'}`);
           result={ok:!state.portalSync.failed,created,sync:{...state.portalSync}};delete result.sync.downloadedChecksums;
           await writeState(env.BUCKET,state,etag);
-          try{result.gmail=await runHostedGmail(env,{read:()=>readState(env.BUCKET),write:(s,e)=>writeState(env.BUCKET,s,e)});}catch(error){result.ok=false;result.gmail={error:error.message};}
           return json(result);
         }
-        case '/api/email/plan':{
-          automateQueue(state,assess(state.data));result=emailPlan(state,body);state.email={...state.email,lastSeenAt:new Date().toISOString(),account:'support.hackenheimer@gmail.com'};break;
-        }
-        case '/api/email/result':emailResult(state,body);state.email={...state.email,lastSeenAt:new Date().toISOString(),account:'support.hackenheimer@gmail.com'};break;
-        case '/api/email/heartbeat':state.email={...state.email,lastSeenAt:new Date().toISOString(),account:'support.hackenheimer@gmail.com',enabled:body.enabled===true};break;
-        case '/api/customer-reply':approveCustomerReply(state,body);event(state,'reply-policy','Saved recipient-bound public answer for a task.');break;
         case '/api/import': state.data=validate(body);assess(state.data);state.actions=state.actions.filter(a=>a.kind==='customer-email');event(state,'import','Imported reviewed snapshot; retained email audit records.');break;
         case '/api/customer':state.data=structuredClone(customerSeed);state.actions=state.actions.filter(a=>a.kind==='customer-email');event(state,state.data.sample?'sample-load':'customer-load',state.data.sample?'Restored deployed synthetic sample.':'Restored reviewed archive kickoff replay.');break;
         case '/api/reset':state.data=structuredClone(sampleSeed);state.actions=state.actions.filter(a=>a.kind==='customer-email');event(state,'sample-reset','Loaded synthetic scenario; retained email audit records.');break;

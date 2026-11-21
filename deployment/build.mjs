@@ -8,18 +8,16 @@ if(!core.includes(signature)||!core.includes("import { createHash } from 'node:c
 const engine=core.replace("import { createHash } from 'node:crypto';",'').replace(signature,'const hash = stableId;').replace(/^export /gm,'');
 const automation=(await read('../launchguard/automation.mjs')).replace("import {planActions} from './engine.mjs';",'').replace(/^export /gm,'');
 const sync=(await read('../launchguard/soony-sync.mjs')).replace(/^export /gm,'');
-const gmail=(await read('../launchguard/gmail.mjs')).replace(/^import .*;\r?\n/gm,'').replace(/^export /gm,'');
 const sampleSeed=JSON.parse(await read('../launchguard/sample.json'));
 // Customer data is opt-in, stays outside source, and is never needed for a public clone/build.
 const customerSeed=process.env.LAUNCHGUARD_CUSTOMER_SNAPSHOT?JSON.parse(await readFile(process.env.LAUNCHGUARD_CUSTOMER_SNAPSHOT,'utf8')):structuredClone(sampleSeed);
 validate(customerSeed);
 const assets={};
 for(const [route,file]of [['/','index.html'],['/app.js','app.js'],['/style.css','style.css'],['/email-setup.html','email-setup.html']])assets[route]=await read('../launchguard/public/'+file);
-for(const name of ['Code.gs','Config.gs','appsscript.json'])assets['/email-automation/'+name]=await read('../email-automation/'+name);
 if(customerSeed.sample)assets['/']=assets['/'].replace('Load Soony archive','Restore deployed sample');
 assets['/app.js']=assets['/app.js'].replace('AI document reading is disabled. Configure OLLAMA_MODEL on the server. Forecasts and action drafts currently use deterministic rules.','Hosted AI reading is not connected. Use the local version for Ollama. Forecasts and drafts use deterministic tools.').replace("el('recovery').disabled=!r.sample;","el('recovery').disabled=!r.sample;el('extract').disabled=true;");
 const worker=(await read('./worker.mjs')).replace('export default','const worker =');
-const output=`const stableId=${stableId.toString()};\n${engine}\n${automation}\n${sync}\n${gmail}\nconst customerSeed=${JSON.stringify(customerSeed)};\nconst sampleSeed=${JSON.stringify(sampleSeed)};\nconst assets=${JSON.stringify(assets)};\n${worker}\nexport default worker;\n`;
+const output=`const stableId=${stableId.toString()};\n${engine}\n${automation}\n${sync}\nconst customerSeed=${JSON.stringify(customerSeed)};\nconst sampleSeed=${JSON.stringify(sampleSeed)};\nconst assets=${JSON.stringify(assets)};\n${worker}\nexport default worker;\n`;
 await mkdir(new URL('./dist/server/',import.meta.url),{recursive:true});await mkdir(new URL('./dist/.openai/',import.meta.url),{recursive:true});
 await writeFile(new URL('./dist/server/index.js',import.meta.url),output);
 await copyFile(new URL('./.openai/hosting.json',import.meta.url),new URL('./dist/.openai/hosting.json',import.meta.url));

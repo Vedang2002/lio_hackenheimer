@@ -1,10 +1,10 @@
 # LaunchGuard
 
-Current automatic operations are documented in [AUTOMATION.md](../AUTOMATION.md): friendly evidence chat, optional free-tier Gemini or local Ollama, automatic source checks, a ranked work queue, and priority Gmail replies through support.hackenheimer@gmail.com. The support account is authorized for the direct hosted worker, with an enabled hourly task and a verified live connection. The local server polls Soony every five minutes when configured. The older manual workflow below remains useful for evidence review and demonstration. Apps Script and its private bridge are an alternative, not required for the direct hosted worker.
+Current operations are described in [AUTOMATION.md](../AUTOMATION.md). Gmail access and all email transports were removed at the user's request. Soony sync, forecasting, task prioritization and evidence chat remain available.
 
 **Start with the [main project README](../README.md)** for the problem statement, solution methodology, features, setup, user walkthrough, architecture, troubleshooting and current deployment status. This file provides additional implementation and data-contract details.
 
-For automatic Gmail reading, replies and drafts, use the separate [Google-hosted email worker](../email-automation/README.md). It requires one-time Google authorization and timer setup; the local Node server is not the email worker.
+Email reading and sending are not available in this application.
 
 A local procurement prototype for Lio's **Keep the Line Running** challenge. Reconciles ERP and physical stock, forecasts completion around shifts and arrivals, and writes deduplicated supplier evidence requests and internal escalations.
 
