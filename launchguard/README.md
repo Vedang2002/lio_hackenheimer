@@ -1,5 +1,7 @@
 # LaunchGuard
 
+Current automatic operations are documented in [AUTOMATION.md](../AUTOMATION.md): friendly evidence chat, optional free-tier Gemini or local Ollama, automatic source checks, a ranked work queue, and priority Gmail replies through support.hackenheimer@gmail.com. The support account is authorized for the direct hosted worker, with an enabled hourly task and a verified live connection. The local server polls Soony every five minutes when configured. The older manual workflow below remains useful for evidence review and demonstration. Apps Script and its private bridge are an alternative, not required for the direct hosted worker.
+
 **Start with the [main project README](../README.md)** for the problem statement, solution methodology, features, setup, user walkthrough, architecture, troubleshooting and current deployment status. This file provides additional implementation and data-contract details.
 
 For automatic Gmail reading, replies and drafts, use the separate [Google-hosted email worker](../email-automation/README.md). It requires one-time Google authorization and timer setup; the local Node server is not the email worker.
@@ -45,7 +47,7 @@ Then select **Load Soony archive** in the app. Review annotations are explicit i
 
 From the parent Lio folder, run `./SYNC_SOONY.ps1` and enter the team API token at its hidden prompt. The token is used only in memory as an Authorization Bearer header and is not saved. `./SYNC_SOONY.ps1 -CheckOnly` compares the portal index without downloading customer files. A process-scoped `SOONY_API_TOKEN` environment variable can be used instead of the prompt; do not commit it or pass the token as a command argument.
 
-The command follows the authenticated OpenAPI contract, compares SHA-256 hashes, downloads only new/changed files, and verifies each size and checksum before replacement. Removed portal files are reported and retained locally for audit; do not include them in refreshed analysis. The app reads the private sync status and displays a review warning when changes appear. Synchronization does not claim to revalidate handwritten corrections or legal/quality releases. Refresh the extraction, review annotations and normalized snapshot before relying on changed data. No unattended polling is configured.
+The command follows the authenticated OpenAPI contract, compares SHA-256 hashes, downloads only new/changed files, and verifies each size and checksum before replacement. Removed portal files are reported and retained locally for audit; do not include them in refreshed analysis. The app reads the private sync status and displays a review warning when changes appear. Synchronization does not claim to revalidate handwritten corrections or legal/quality releases. Refresh the extraction, review annotations and normalized snapshot before relying on changed data. The local server now polls every five minutes when configured; the hosted task is hourly.
 
 ## Demo
 

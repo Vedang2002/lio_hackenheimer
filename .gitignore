@@ -4,3 +4,8 @@ customer-data/
 launchguard/customer-data/
 # Separate owner-private Sites repository contains the reviewed customer seed
 online-launchguard/
+# OAuth client exports and local secret configuration are never source files.
+client_secret_*.json
+credentials.json
+.env*
+.secrets/

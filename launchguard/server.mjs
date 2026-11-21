@@ -3,6 +3,8 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {join,dirname} from 'node:path';
 import {assess,planActions,validate} from './engine.mjs';
+import {automateQueue,chatAnswer,emailPlan,emailResult,approveCustomerReply} from './automation.mjs';
+import {syncSoony} from './soony-sync.mjs';
 
 const env=globalThis.process?.env ?? {};
 const root=dirname(fileURLToPath(import.meta.url));
@@ -13,6 +15,8 @@ try {state=JSON.parse(await readFile(join(stateDir,'state.json'),'utf8'));valida
 try { const customer=JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8'));validate(customer);if(state.data.sample)state={data:customer,actions:[],events:[{at:new Date().toISOString(),type:'customer-load',detail:'Loaded local customer archive with reviewed evidence; kickoff replay, not a live count.'}]}; }catch(e){if(e.code!=='ENOENT')throw e;}
 let queue=Promise.resolve();
 async function save(){const dest=join(stateDir,'state.json');await writeFile(dest+'.tmp',JSON.stringify(state,null,2));await rename(dest+'.tmp',dest);}
+const fileStore={async put(key,data){const dest=join(stateDir,key);await mkdir(dirname(dest),{recursive:true});await writeFile(dest,data);}};
+async function automaticRun(){await syncSoony(state,fileStore,env.SOONY_API_TOKEN);automateQueue(state,assess(state.data));await save();}
 function event(type,detail){state.events.unshift({at:new Date().toISOString(),type,detail});state.events=state.events.slice(0,100);}
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
 async function body(req){let s='';for await(const c of req){s+=c;if(s.length>2_000_000)throw Error('Request exceeds 2 MB');}return JSON.parse(s||'{}');}
@@ -25,15 +29,21 @@ const server=http.createServer((req,res)=>{
       if(req.method==='POST' && (req.headers['content-type']?.split(';')[0]!=='application/json' || (req.headers.origin && req.headers.origin!==`http://${req.headers.host}`)))return json(res,403,{error:'Same-origin JSON required'});
       if(req.method==='GET'&&publicFiles.has(url.pathname)){const file=publicFiles.get(url.pathname);res.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html; charset=utf-8':file.endsWith('.css')?'text/css':'text/javascript','Content-Security-Policy':"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});res.end(await readFile(join(root,'public',file)));return;}
       if(req.method==='GET'&&url.pathname==='/api/state'){
-        let portalSync=null;
-        try{portalSync=JSON.parse((await readFile(join(root,'customer-data','portal-sync-status.json'),'utf8')).replace(/^\uFEFF/,''));}catch(e){if(e.code!=='ENOENT')throw e;}
-        return json(res,200,{...state,report:assess(state.data),portalSync,model:env.OLLAMA_MODEL||null});
+        automateQueue(state,assess(state.data));const view=structuredClone(state);if(view.portalSync)delete view.portalSync.downloadedChecksums;
+        return json(res,200,{...view,report:assess(state.data),model:env.OLLAMA_MODEL||null,syncConfigured:!!env.SOONY_API_TOKEN,emailBridgeConfigured:!!env.EMAIL_BRIDGE_SECRET});
       }
+      if(req.method==='POST'&&url.pathname.startsWith('/api/email/')&&(!env.EMAIL_BRIDGE_SECRET||req.headers['x-launchguard-email-key']!==env.EMAIL_BRIDGE_SECRET))return json(res,403,{error:'Email worker authorization required'});
+      if(req.method==='POST'&&url.pathname==='/api/chat')return json(res,200,await chatAnswer((await body(req)).question,state,assess(state.data),env));
+      if(req.method==='POST'&&url.pathname==='/api/automation'){await automaticRun();return json(res,200,{ok:!state.portalSync.failed});}
+      if(req.method==='POST'&&url.pathname==='/api/customer-reply'){approveCustomerReply(state,await body(req));await save();return json(res,200,{ok:true});}
+      if(req.method==='POST'&&url.pathname==='/api/email/plan'){automateQueue(state,assess(state.data));const result=emailPlan(state,await body(req));state.email={account:'support.hackenheimer@gmail.com',lastSeenAt:new Date().toISOString()};await save();return json(res,200,result);}
+      if(req.method==='POST'&&url.pathname==='/api/email/result'){emailResult(state,await body(req));await save();return json(res,200,{ok:true});}
+      if(req.method==='POST'&&url.pathname==='/api/email/heartbeat'){state.email={account:'support.hackenheimer@gmail.com',lastSeenAt:new Date().toISOString(),enabled:(await body(req)).enabled===true};await save();return json(res,200,{ok:true});}
       if(req.method==='POST'&&url.pathname==='/api/customer'){
-        const data=validate(JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8')));state={data,actions:[],events:state.events};event('customer-load','Loaded normalized local archive and reviewed evidence.');await save();return json(res,200,{ok:true});
+        const data=validate(JSON.parse(await readFile(join(root,'customer-data','snapshot.json'),'utf8')));state={...state,data,actions:state.actions.filter(a=>a.kind==='customer-email')};event('customer-load','Loaded normalized local archive and reviewed evidence.');await save();return json(res,200,{ok:true});
       }
       if(req.method==='POST'&&url.pathname==='/api/import'){
-        const d=validate(await body(req));assess(d);state={data:d,actions:[],events:state.events};event('import','Replaced normalized snapshot; reset action queue.');await save();return json(res,200,{ok:true});
+        const d=validate(await body(req));assess(d);state={...state,data:d,actions:state.actions.filter(a=>a.kind==='customer-email')};event('import','Replaced normalized snapshot; reset action queue.');await save();return json(res,200,{ok:true});
       }
       if(req.method==='POST'&&url.pathname==='/api/run'){
         const report=assess(state.data);const actions=planActions(report,state.actions);state.actions.push(...actions);event('agent-run',`${report.status}; wrote ${actions.length} new follow-up / escalation drafts.`);await save();return json(res,200,{report,created:actions.length});
@@ -65,5 +75,7 @@ const server=http.createServer((req,res)=>{
 });
 const port=Number(env.PORT||8787);
 server.listen(port,'127.0.0.1',()=>console.log(`LaunchGuard: http://127.0.0.1:${port}`));
+queue=queue.then(automaticRun).catch(()=>event('automation-error','Automatic source check failed; previous forecast retained.'));
+const timer=setInterval(()=>{queue=queue.then(automaticRun).catch(()=>event('automation-error','Automatic source check failed; previous forecast retained.'));},300000);timer.unref();server.on('close',()=>clearInterval(timer));
 export {server};
 

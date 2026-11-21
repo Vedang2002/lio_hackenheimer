@@ -32,14 +32,39 @@ export default {
         const origin=request.headers.get('Origin');if(origin&&origin!==url.origin)return json({error:'Same-origin request required'},403);
       }
       const {state,etag}=await readState(env.BUCKET);
-      if(request.method==='GET'&&url.pathname==='/api/state')return json({...state,report:assess(state.data),model:null,hosted:true});
+      if(request.method==='GET'&&url.pathname==='/api/state'){
+        const view=structuredClone(state);automateQueue(view,assess(view.data));
+        if(view.portalSync)delete view.portalSync.downloadedChecksums;
+        return json({...view,report:assess(view.data),model:null,hosted:true,chatMode:env.GEMINI_API_KEY&&env.GEMINI_MODEL&&env.AI_DATA_SHARING==='enabled'?'ai':'evidence',syncConfigured:!!env.SOONY_API_TOKEN,emailBridgeConfigured:!!env.EMAIL_BRIDGE_SECRET});
+      }
       if(request.method!=='POST')return json({error:'Not found'},404);
       const body=await parseBody(request);
+      // Email caller also passes the Site service-access header through dispatch. The narrow
+      // bridge secret prevents invited dashboard visitors from impersonating the Gmail worker.
+      if(url.pathname.startsWith('/api/email/')){
+        if(!env.EMAIL_BRIDGE_SECRET||request.headers.get('X-LaunchGuard-Email-Key')!==env.EMAIL_BRIDGE_SECRET)return json({error:'Email worker authorization required'},403);
+      }
       let result={ok:true};
       switch(url.pathname){
-        case '/api/import': state.data=validate(body);assess(state.data);state.actions=[];event(state,'import','Imported reviewed snapshot.');break;
-        case '/api/customer':state.data=structuredClone(customerSeed);state.actions=[];event(state,state.data.sample?'sample-load':'customer-load',state.data.sample?'Restored deployed synthetic sample.':'Restored reviewed archive kickoff replay.');break;
-        case '/api/reset':state.data=structuredClone(sampleSeed);state.actions=[];event(state,'sample-reset','Loaded synthetic scenario.');break;
+        case '/api/chat':automateQueue(state,assess(state.data));return json(await chatAnswer(body.question,state,assess(state.data),{GEMINI_API_KEY:env.GEMINI_API_KEY,GEMINI_MODEL:env.GEMINI_MODEL,AI_DATA_SHARING:env.AI_DATA_SHARING}));
+        case '/api/automation':{
+          await syncSoony(state,env.BUCKET,env.SOONY_API_TOKEN);
+          const created=automateQueue(state,assess(state.data));
+          event(state,'automatic-run',`Prioritized work queue; ${created} new tasks. ${state.portalSync.failed?'Soony check needs attention.':'Soony files checked.'}`);
+          result={ok:!state.portalSync.failed,created,sync:{...state.portalSync}};delete result.sync.downloadedChecksums;
+          await writeState(env.BUCKET,state,etag);
+          try{result.gmail=await runHostedGmail(env,{read:()=>readState(env.BUCKET),write:(s,e)=>writeState(env.BUCKET,s,e)});}catch(error){result.ok=false;result.gmail={error:error.message};}
+          return json(result);
+        }
+        case '/api/email/plan':{
+          automateQueue(state,assess(state.data));result=emailPlan(state,body);state.email={...state.email,lastSeenAt:new Date().toISOString(),account:'support.hackenheimer@gmail.com'};break;
+        }
+        case '/api/email/result':emailResult(state,body);state.email={...state.email,lastSeenAt:new Date().toISOString(),account:'support.hackenheimer@gmail.com'};break;
+        case '/api/email/heartbeat':state.email={...state.email,lastSeenAt:new Date().toISOString(),account:'support.hackenheimer@gmail.com',enabled:body.enabled===true};break;
+        case '/api/customer-reply':approveCustomerReply(state,body);event(state,'reply-policy','Saved recipient-bound public answer for a task.');break;
+        case '/api/import': state.data=validate(body);assess(state.data);state.actions=state.actions.filter(a=>a.kind==='customer-email');event(state,'import','Imported reviewed snapshot; retained email audit records.');break;
+        case '/api/customer':state.data=structuredClone(customerSeed);state.actions=state.actions.filter(a=>a.kind==='customer-email');event(state,state.data.sample?'sample-load':'customer-load',state.data.sample?'Restored deployed synthetic sample.':'Restored reviewed archive kickoff replay.');break;
+        case '/api/reset':state.data=structuredClone(sampleSeed);state.actions=state.actions.filter(a=>a.kind==='customer-email');event(state,'sample-reset','Loaded synthetic scenario; retained email audit records.');break;
         case '/api/run':{
           const report=assess(state.data),actions=planActions(report,state.actions);state.actions.push(...actions);event(state,'agent-run',`${report.status}; wrote ${actions.length} new action drafts.`);result={report,created:actions.length};break;
         }
@@ -52,6 +77,7 @@ export default {
         case '/api/extract':return json({error:'Local Ollama is not connected to the hosted app. Use the local version for AI document extraction.'},400);
         default:return json({error:'Not found'},404);
       }
+      automateQueue(state,assess(state.data));
       await writeState(env.BUCKET,state,etag);return json(result);
     }catch(error){return json({error:error.message||'Request failed'},error.status||400);}
   }

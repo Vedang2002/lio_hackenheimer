@@ -1,13 +1,14 @@
 /** LaunchGuard Gmail worker. Executes in the authorized user's Google Apps Script project. */
 function emailConfig_() {
   var c=LAUNCHGUARD_EMAIL_CONFIG;
-  if(!c||!['acknowledge','approved_rules','draft'].includes(c.mode))throw Error('Invalid email mode.');
+  if(!c||!['task_queue','acknowledge','approved_rules','draft'].includes(c.mode))throw Error('Invalid email mode.');
   if(!/^[^\s<>@,;]+@[^\s<>@,;]+\.[^\s<>@,;]+$/.test(c.expectedAccount))throw Error('Invalid expected account.');
   if(![1,5,10,15,30].includes(c.intervalMinutes))throw Error('Unsupported trigger interval.');
   ['messagesPerRun','maxPagesPerRun','maxWritesPerDay'].forEach(function(k){if(!Number.isInteger(c[k])||c[k]<1||c[k]>100)throw Error('Invalid '+k);});
   if(typeof c.inboxQuery!=='string'||!c.inboxQuery.trim()||!Array.isArray(c.rules)||typeof c.acknowledgment!=='string'||!c.acknowledgment.trim())throw Error('Missing email configuration.');
   var ids={};c.rules.forEach(function(r){if(!r.id||ids[r.id]||!Array.isArray(r.matchAny)||!r.matchAny.length||r.matchAny.some(function(p){return typeof p!=='string'||p.trim().length<4;})||typeof r.reply!=='string'||!r.reply.trim())throw Error('Invalid or duplicate reply rule.');ids[r.id]=true;});
   if(JSON.stringify(c).length>7000)throw Error('Keep email configuration below 7,000 characters for persistent settings.');
+  if(c.siteUrl&&c.siteUrl!=='https://launchguard-hackenheimer.lucidcoil32.chatgpt.site')throw Error('Use the registered LaunchGuard Site URL.');
   return c;
 }
 
@@ -96,12 +97,29 @@ function replyDecision_(message,config) {
   var text=(subject+'\n'+bodyText_(message.payload)).toLowerCase();
   var matches=config.rules.filter(function(rule){return rule.matchAny.some(function(term){return text.includes(term.toLowerCase());});});
   var reply=config.acknowledgment,ruleId='acknowledgment';
+  var priority=/urgent|critical|blocked|line.stop|safety/i.test(text)?'high':/overdue|deadline|delay/i.test(text)?'medium':'normal';
+  if(config.mode==='task_queue'){
+    reply=matches.length===1?matches[0].reply:'Thank you for contacting Hackenheimer. We received your message'+(priority==='high'?' and flagged it as high priority':priority==='medium'?' and flagged it for timely review':'')+'. This is an automatic receipt; our team has not yet reviewed or resolved your request.\n\nHackenheimer Support';
+    ruleId=matches.length===1?matches[0].id:'priority-receipt';
+  }
   if(config.mode==='approved_rules'){
     if(matches.length!==1)return {review:matches.length?'multiple-rules':'no-approved-answer'};
     reply=matches[0].reply;ruleId=matches[0].id;
   }else if(config.mode==='draft'&&matches.length===1){reply=matches[0].reply;ruleId=matches[0].id;}
   if(reply.length>20000)throw Error('Reply template is too long.');
-  return {to:target,subject:subject,originalId:originalId,reply:reply,ruleId:ruleId,draft:config.mode==='draft'};
+  return {to:target,subject:subject,originalId:originalId,reply:reply,ruleId:ruleId,priority:priority,draft:config.mode==='draft'};
+}
+
+function bridgeConfigured_(props){return !!(props.getProperty('LG_SITE_SERVICE_TOKEN')&&props.getProperty('LG_EMAIL_BRIDGE_SECRET'));}
+function bridgeRequest_(path,body,config,props) {
+  var response=UrlFetchApp.fetch(config.siteUrl+'/api/email/'+path,{method:'post',contentType:'application/json',headers:{'OAI-Sites-Authorization':'Bearer '+props.getProperty('LG_SITE_SERVICE_TOKEN'),'X-LaunchGuard-Email-Key':props.getProperty('LG_EMAIL_BRIDGE_SECRET')},payload:JSON.stringify(body),muteHttpExceptions:true,followRedirects:false});
+  if(response.getResponseCode()<200||response.getResponseCode()>=300)throw Error('LaunchGuard email bridge is unavailable. No unconfirmed dashboard answer will be sent.');
+  var result=JSON.parse(response.getContentText());return result;
+}
+function publishEmailResult_(props,id,record,config) {
+  if(!record.taskId||!bridgeConfigured_(props))return;
+  try{bridgeRequest_('result',{taskId:record.taskId,status:record.status==='sent'?'sent':record.status==='drafted'?'drafted':'uncertain',gmailId:record.gmailId||''},config,props);record.bridgePending=false;record_(props,id,record);}
+  catch(error){record.bridgePending=true;record_(props,id,record);}
 }
 
 function outgoingId_(gmailId){if(!/^[A-Za-z0-9_-]{1,128}$/.test(gmailId))throw Error('Invalid Gmail message ID.');return '<launchguard.reply.'+gmailId+'@launchguard.invalid>';}
@@ -129,21 +147,27 @@ function reconcileOne_(props,id,record) {
 
 function processOne_(message,config,props,stats,budget) {
   var key='LG_MSG_'+message.id,existing=props.getProperty(key);
-  if(existing){var saved=JSON.parse(existing);if(saved.status==='sending'||saved.status==='creating-draft')reconcileOne_(props,message.id,saved);return;}
+  if(existing){var saved=JSON.parse(existing);if(saved.status==='sending'||saved.status==='creating-draft')saved=reconcileOne_(props,message.id,saved);if(saved.bridgePending||saved.taskId)publishEmailResult_(props,message.id,saved,config);return;}
   if(!Number.isFinite(Number(message.internalDate))||!message.threadId){record_(props,message.id,{status:'review',reason:'missing-message-metadata'});stats.review++;return;}
   if(Number(message.internalDate)<Number(props.getProperty('LG_ACTIVATED_AT'))){record_(props,message.id,{status:'skipped',reason:'before-activation'});stats.skipped++;return;}
   var decision;try{decision=replyDecision_(message,config);}catch(error){record_(props,message.id,{status:'review',reason:'Malformed or ambiguous message headers; review manually.'});stats.review++;return;}
   if(decision.skip||decision.review){record_(props,message.id,{status:decision.skip?'skipped':'review',reason:decision.skip||decision.review});stats[decision.skip?'skipped':'review']++;return;}
+  if(config.mode==='task_queue'&&bridgeConfigured_(props)){
+    var plan=bridgeRequest_('plan',{id:message.id,threadId:message.threadId,from:decision.to,subject:decision.subject,text:bodyText_(message.payload)},config,props);
+    if(typeof plan.reply!=='string'||!plan.reply.trim()||plan.reply.length>20000||typeof plan.taskId!=='string')throw Error('Invalid dashboard reply plan.');
+    if(plan.alreadySent){record_(props,message.id,{status:'sent',taskId:plan.taskId,reason:'Dashboard already confirmed this message.'});return;}
+    decision.reply=plan.reply;decision.priority=plan.priority;decision.taskId=plan.taskId;decision.ruleId=plan.policy;
+  }
   if(budget.used>=config.maxWritesPerDay)throw Error('Daily email write limit reached; processing will resume on the next UTC day.');
   var raw=mimeReply_(message,decision,config.expectedAccount);
-  var pending={status:decision.draft?'creating-draft':'sending',kind:decision.draft?'draft':'send',ruleId:decision.ruleId};
+  var pending={status:decision.draft?'creating-draft':'sending',kind:decision.draft?'draft':'send',ruleId:decision.ruleId,priority:decision.priority,taskId:decision.taskId||null};
   // Persist reservation and budget BEFORE the Gmail call; a crash never authorizes an automatic duplicate send.
   budget.used++;props.setProperty('LG_BUDGET',JSON.stringify(budget));record_(props,message.id,pending);
   try{
     var result=decision.draft?gmailRequest_('post','drafts',{message:{threadId:message.threadId,raw:raw}}):gmailRequest_('post','messages/send',{threadId:message.threadId,raw:raw});
     if(!(result.id||result.message&&result.message.id))throw Error('Gmail did not confirm a message ID.');
-    record_(props,message.id,{status:decision.draft?'drafted':'sent',kind:pending.kind,gmailId:result.id||result.message.id,ruleId:decision.ruleId});stats[decision.draft?'drafted':'sent']++;
-  }catch(error){record_(props,message.id,{status:'uncertain',kind:pending.kind,reason:'Gmail result not confirmed; inspect Sent/Drafts before any manual retry.'});throw Error('Email write outcome requires review; this message will not be sent again automatically.');}
+    var completed=Object.assign({},pending,{status:decision.draft?'drafted':'sent',gmailId:result.id||result.message.id});record_(props,message.id,completed);publishEmailResult_(props,message.id,completed,config);stats[decision.draft?'drafted':'sent']++;
+  }catch(error){var uncertain=Object.assign({},pending,{status:'uncertain',reason:'Gmail result not confirmed; inspect Sent/Drafts before any manual retry.'});record_(props,message.id,uncertain);publishEmailResult_(props,message.id,uncertain,config);throw Error('Email write outcome requires review; this message will not be sent again automatically.');}
 }
 
 function processCustomerInbox() {
@@ -154,6 +178,9 @@ function processCustomerInbox() {
     if(props.getProperty('LG_ENABLED')!=='true')return {enabled:false};
     var config=emailConfig_();if(props.getProperty('LG_SETTINGS')!==JSON.stringify(config))throw Error('Configuration changed; stop, accept configuration, and restart before sending.');
     verifyGmailConnection();
+    if(bridgeConfigured_(props))bridgeRequest_('heartbeat',{enabled:true},config,props);
+    // Retry dashboard status writes independently of the scan checkpoint; never repeat Gmail sends.
+    Object.keys(props.getProperties()).filter(function(k){return k.indexOf('LG_MSG_')===0;}).slice(-200).forEach(function(k){var r=JSON.parse(props.getProperty(k));if(r.bridgePending)publishEmailResult_(props,k.slice(7),r,config);});
     var day=new Date(started).toISOString().slice(0,10),budget=JSON.parse(props.getProperty('LG_BUDGET')||'{}');if(budget.day!==day)budget={day:day,used:0};
     var scan=JSON.parse(props.getProperty('LG_SCAN')||'null');
     if(!scan){var checkpoint=Number(props.getProperty('LG_CHECKPOINT')||props.getProperty('LG_ACTIVATED_AT'));if(!Number.isFinite(checkpoint)||checkpoint<=0)throw Error('Start automation before processing messages.');scan={started:started,query:config.inboxQuery+' after:'+Math.floor((checkpoint-300000)/1000)+' before:'+(Math.floor(started/1000)+1),pageToken:null};props.setProperty('LG_SCAN',JSON.stringify(scan));}
@@ -161,15 +188,20 @@ function processCustomerInbox() {
     for(var page=0;page<config.maxPagesPerRun;page++){
       var endpoint='messages?maxResults=100&q='+encodeURIComponent(scan.query)+(scan.pageToken?'&pageToken='+encodeURIComponent(scan.pageToken):'');
       var listing=gmailRequest_('get',endpoint);
-      var messages=listing.messages||[];
+      var messages=listing.messages||[],batch=[],partial=false;
       for(var i=0;i<messages.length;i++){
-        if(stats.read>=config.messagesPerRun||Date.now()-started>240000){props.setProperty('LG_LAST_RUN',JSON.stringify({at:Date.now(),stats:stats,remaining:true}));return stats;}
+        if(stats.read>=config.messagesPerRun||Date.now()-started>240000){partial=true;break;}
         var id=messages[i].id;if(seenThisRun[id])continue;seenThisRun[id]=true;
         var saved=props.getProperty('LG_MSG_'+id);
-        if(saved){var record=JSON.parse(saved);if(['sending','creating-draft'].includes(record.status))reconcileOne_(props,id,record);continue;}
+        if(saved){var record=JSON.parse(saved);if(['sending','creating-draft'].includes(record.status)){record=reconcileOne_(props,id,record);publishEmailResult_(props,id,record,config);}continue;}
         var message=gmailRequest_('get','messages/'+encodeURIComponent(id)+'?format=full');stats.read++;
-        processOne_(message,config,props,stats,budget);
+        batch.push(message);
       }
+      // Prioritize the bounded fetched batch. Never skip the remainder of an unfinished page.
+      function rank_(m){try{var d=replyDecision_(m,config);return d.priority==='high'?0:d.priority==='medium'?1:2;}catch(e){return 3;}}
+      batch.sort(function(a,b){return rank_(a)-rank_(b)||Number(a.internalDate)-Number(b.internalDate);});
+      batch.forEach(function(m){processOne_(m,config,props,stats,budget);});
+      if(partial){props.setProperty('LG_LAST_RUN',JSON.stringify({at:Date.now(),stats:stats,remaining:true}));return stats;}
       if(!listing.nextPageToken){props.setProperty('LG_CHECKPOINT',String(scan.started));props.deleteProperty('LG_SCAN');props.setProperty('LG_LAST_RUN',JSON.stringify({at:Date.now(),stats:stats}));return stats;}
       scan.pageToken=listing.nextPageToken;props.setProperty('LG_SCAN',JSON.stringify(scan));
     }
@@ -186,7 +218,7 @@ function showEmailAutomationStatus() {
 
 function reconcileUncertainEmailWrites() {
   var lock=LockService.getScriptLock();if(!lock.tryLock(1000))throw Error('Worker is busy.');
-  try{verifyGmailConnection();var props=PropertiesService.getScriptProperties(),all=props.getProperties(),count=0;Object.keys(all).forEach(function(k){if(k.indexOf('LG_MSG_')!==0||count>=20)return;var record=JSON.parse(all[k]);if(['sending','creating-draft','uncertain'].includes(record.status)){reconcileOne_(props,k.slice(7),record);count++;}});return {checked:count};}finally{lock.releaseLock();}
+  try{verifyGmailConnection();var props=PropertiesService.getScriptProperties(),all=props.getProperties(),count=0;Object.keys(all).forEach(function(k){if(k.indexOf('LG_MSG_')!==0||count>=20)return;var record=JSON.parse(all[k]);if(['sending','creating-draft','uncertain'].includes(record.status)){record=reconcileOne_(props,k.slice(7),record);publishEmailResult_(props,k.slice(7),record,emailConfig_());count++;}});return {checked:count};}finally{lock.releaseLock();}
 }
 
 function listEmailRecordsForReview() {

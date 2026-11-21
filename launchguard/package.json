@@ -1,1 +1,1 @@
-{"name":"launchguard","version":"1.0.0","private":true,"type":"module","scripts":{"start":"node server.mjs","test":"node --test test.mjs customer.test.mjs ../email-automation/email.test.mjs"},"engines":{"node":">=22"}}
+{"name":"launchguard","version":"1.0.0","private":true,"type":"module","scripts":{"start":"node server.mjs","test":"node --test test.mjs customer.test.mjs automation.test.mjs gmail.test.mjs ../email-automation/email.test.mjs"},"engines":{"node":">=22"}}

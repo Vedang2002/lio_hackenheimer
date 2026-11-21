@@ -1,8 +1,18 @@
 # Automatic Gmail reading and replies
 
+**Current hosted deployment:** the user authorized the Desktop OAuth client for support.hackenheimer@gmail.com. The direct hosted worker is enabled on an hourly schedule and updates the dashboard queue without Apps Script. See [direct OAuth setup and verified status](../AUTOMATION.md#direct-hosted-oauth-recommended-with-a-desktop-client). This folder's Apps Script transport is an alternative, not another worker to enable on the same mailbox. The older setup instructions below apply to a fresh Apps Script project, which has not been activated by this change.
+
+## Priority task mode (current default)
+
+`Config.gs` now defaults to **task_queue**. New messages are classified high/medium/normal and the fetched batch is processed in that order. An exact approved rule sends its public reply; other messages get an automatic priority-aware receipt. The sender is verified as **support.hackenheimer@gmail.com**. The timer runs on Google, including with the computer off.
+
+For dashboard-approved answers and queue send-status updates, configure the optional private bridge in [AUTOMATION.md](../AUTOMATION.md#link-inbox-events-to-the-dashboard). It requires a Site secret and two Apps Script Properties. Without the bridge, the Google worker sends priority receipts/configuration rules, but the dashboard does not receive mailbox activity. Bridge errors prevent unconfirmed task answers being sent. Failed status writes retry without another Gmail send. Internal forecast text is never automatically copied into replies.
+
+Google consent and starting the trigger are still necessary. No Google authorization, live send or trigger installation has been performed by this code change.
+
 This cloud worker reads new customer emails and writes threaded Gmail replies or drafts. After you install it in **your Google Apps Script project** and authorize the support account once, Google's timer runs it even when your computer and LaunchGuard browser tab are closed.
 
-**Code is implemented and tested, but no Gmail account has been authorized and no trigger has been installed by this repository. No real emails have been sent.** The worker runs independently of the private LaunchGuard website; the website is not a mailbox UI and does not automatically forward its procurement findings to customers.
+**Code is implemented and tested, but no Gmail account has been authorized and no trigger has been installed by this repository. No real emails have been sent.** The Google worker runs independently; the optional authenticated bridge connects dashboard task policies and send status. It never automatically forwards private procurement findings to customers.
 
 ## What it does
 
@@ -36,7 +46,8 @@ There is no web-app deployment, API key, Apps Script web endpoint, ChatGPT conne
 
 | Mode | Behavior |
 | --- | --- |
-| `acknowledge` | Sends the exact configured acknowledgment to eligible new messages. This is the configuration's default. It confirms receipt only, not that a request was reviewed or resolved. |
+| `task_queue` | Default: ranks fetched messages by priority and sends an approved answer or priority receipt. Optional private bridge links dashboard task policies and send status. |
+| `acknowledge` | Sends the exact configured acknowledgment to eligible new messages. It confirms receipt only, not that a request was reviewed or resolved. |
 | `approved_rules` | Sends an approved rule's exact response only when exactly one rule matches. Unknown or ambiguous questions are held for review. |
 | `draft` | Creates a draft using a matching approved response or the acknowledgment. It does not send. |
 

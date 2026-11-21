@@ -1,7 +1,9 @@
 // Edit approved reply text here. Never put a Gmail password or API token in this file.
 var LAUNCHGUARD_EMAIL_CONFIG = {
   expectedAccount: 'support.hackenheimer@gmail.com',
-  mode: 'acknowledge', // acknowledge | approved_rules | draft
+  mode: 'task_queue', // task_queue | acknowledge | approved_rules | draft
+  // Optional private dashboard bridge. Credentials belong in Script Properties, never here.
+  siteUrl: 'https://launchguard-hackenheimer.lucidcoil32.chatgpt.site',
   inboxQuery: 'in:inbox -category:promotions -category:social',
   intervalMinutes: 1,
   messagesPerRun: 20,

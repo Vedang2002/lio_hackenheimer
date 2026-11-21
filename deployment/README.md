@@ -1,5 +1,7 @@
 # Hosted application source
 
+For automatic Soony checks, chat model configuration, email bridge credentials and the unattended updater, see [AUTOMATION.md](../AUTOMATION.md). These runtime secrets are not embedded in builds. The current hosted integration suite has eight tests; the reviewed private-seed suite is separate.
+
 This directory contains the GitHub-safe source for LaunchGuard's hosted Worker, storage adapter, embedded UI build and tests. It reuses the core engine, UI and email worker from the main repository instead of copying customer records.
 
 The live Site's approved reviewed snapshot remains in the separate private Site repository. **No reviewed customer seed, raw archive, API token, Gmail password or cloud access credential is included here.**
